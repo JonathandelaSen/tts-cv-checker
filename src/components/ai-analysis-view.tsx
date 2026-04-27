@@ -144,6 +144,24 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
           </div>
         </div>
 
+        {/* Job Description (if any) */}
+        {analysis.job_description && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6"
+          >
+            <h4 className="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3">
+              <Briefcase className="w-4 h-4 text-indigo-400" />
+              Oferta de Trabajo Analizada
+            </h4>
+            <div className="text-sm text-zinc-400 bg-[#0a0a12] rounded-xl p-4 border border-white/[0.04] whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {analysis.job_description}
+            </div>
+          </motion.div>
+        )}
+
         {/* Keywords & Improvements Grid */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Keywords */}

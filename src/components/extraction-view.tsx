@@ -15,6 +15,7 @@ import {
   Loader2,
   ChevronRight,
   ArrowRight,
+  Download,
 } from "lucide-react";
 
 interface ExtractionData {
@@ -158,6 +159,17 @@ export default function ExtractionView({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {analysis.id && (
+            <a
+              href={`/api/analyses/${analysis.id}/pdf`}
+              download={analysis.filename}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all mr-2"
+              title="Descargar PDF original"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Ver PDF
+            </a>
+          )}
           <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-1 rounded-md">
             {wordCount.toLocaleString()} palabras
           </span>

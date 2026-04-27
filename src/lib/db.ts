@@ -30,6 +30,7 @@ function getDb(): Database.Database {
       id TEXT PRIMARY KEY,
       filename TEXT NOT NULL,
       file_size INTEGER,
+      pdf_path TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
 
@@ -50,6 +51,13 @@ function getDb(): Database.Database {
     );
   `);
 
+  // Migration: add pdf_path if missing (for existing DBs)
+  try {
+    _db.exec(`ALTER TABLE analyses ADD COLUMN pdf_path TEXT;`);
+  } catch {
+    // column already exists
+  }
+
   return _db;
 }
 
@@ -61,6 +69,7 @@ export interface Analysis {
   id: string;
   filename: string;
   file_size: number | null;
+  pdf_path: string | null;
   created_at: string;
   updated_at: string;
   text_python: string | null;
@@ -93,6 +102,7 @@ export interface AnalysisSummary {
 export interface CreateAnalysisInput {
   filename: string;
   file_size: number | null;
+  pdf_path: string | null;
   text_python: string | null;
   text_pdfjs: string | null;
   text_node: string | null;
@@ -106,11 +116,11 @@ export function createAnalysis(data: CreateAnalysisInput): Analysis {
   const id = uuidv4();
   const stmt = db.prepare(`
     INSERT INTO analyses (
-      id, filename, file_size,
+      id, filename, file_size, pdf_path,
       text_python, text_pdfjs, text_node,
       extract_error_python, extract_error_pdfjs, extract_error_node
     ) VALUES (
-      @id, @filename, @file_size,
+      @id, @filename, @file_size, @pdf_path,
       @text_python, @text_pdfjs, @text_node,
       @extract_error_python, @extract_error_pdfjs, @extract_error_node
     )
@@ -176,6 +186,15 @@ export function listAnalyses(): AnalysisSummary[] {
 
 export function deleteAnalysis(id: string): boolean {
   const db = getDb();
+  // Get analysis to find PDF path before deleting
+  const analysis = getAnalysis(id);
   const result = db.prepare("DELETE FROM analyses WHERE id = ?").run(id);
+  if (result.changes > 0 && analysis?.pdf_path) {
+    try {
+      fs.unlinkSync(analysis.pdf_path);
+    } catch {
+      // file may already be gone
+    }
+  }
   return result.changes > 0;
 }

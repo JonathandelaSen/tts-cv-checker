@@ -93,15 +93,22 @@ export async function POST(req: NextRequest) {
       pythonError = parsedOut.error || null;
     } catch (e: any) {
       pythonError = e.message;
-    } finally {
-      // Clean up temp file
-      await fs.unlink(tempFilePath).catch(() => {});
     }
+
+    // Save PDF to persistent storage
+    const pdfsDir = path.join(process.cwd(), "data", "pdfs");
+    await fs.mkdir(pdfsDir, { recursive: true });
+    const persistentPdfPath = path.join(pdfsDir, `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`);
+    await fs.copyFile(tempFilePath, persistentPdfPath);
+
+    // Clean up temp file
+    await fs.unlink(tempFilePath).catch(() => {});
 
     // Save to database
     const analysis = createAnalysis({
       filename: file.name,
       file_size: file.size,
+      pdf_path: persistentPdfPath,
       text_python: pythonText,
       text_pdfjs: pdfjsText,
       text_node: nodeText,
