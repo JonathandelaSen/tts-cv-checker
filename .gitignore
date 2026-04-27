@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# sqlite data
+data/
+
 # next.js
 /.next/
 /out/
