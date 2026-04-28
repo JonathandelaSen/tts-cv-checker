@@ -392,7 +392,7 @@ export default function ExtractionView({
                   </label>
                   <textarea
                     placeholder="Pega aquí la oferta de trabajo para una comparación más precisa..."
-                    className="w-full h-24 px-4 py-3 rounded-xl bg-[#0a0a12] border border-white/[0.06] text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                    className="w-full h-48 px-4 py-3 rounded-xl bg-[#0a0a12] border border-white/[0.06] text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/10 transition-all"
                     value={jobDescription}
                     onChange={(e) => setJobDescription(e.target.value)}
                   />

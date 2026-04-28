@@ -201,7 +201,7 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
               <Briefcase className="w-4 h-4 text-indigo-400" />
               Oferta de Trabajo Analizada
             </h4>
-            <div className="text-sm text-zinc-400 bg-[#0a0a12] rounded-xl p-4 border border-white/[0.04] whitespace-pre-wrap max-h-48 overflow-y-auto">
+            <div className="text-sm text-zinc-400 bg-[#0a0a12] rounded-xl p-4 border border-white/[0.04] whitespace-pre-wrap max-h-96 overflow-y-auto">
               {analysis.job_description}
             </div>
           </motion.div>
