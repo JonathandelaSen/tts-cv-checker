@@ -16,6 +16,8 @@ import {
   ChevronRight,
   ArrowRight,
   Download,
+  Eye,
+  X,
 } from "lucide-react";
 
 interface ExtractionData {
@@ -75,6 +77,7 @@ export default function ExtractionView({
   const [selectedModel, setSelectedModel] = useState("gemini-3.1-pro-preview");
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const getTextForTab = (tab: ParserTab) => {
     switch (tab) {
@@ -160,15 +163,28 @@ export default function ExtractionView({
         </div>
         <div className="flex items-center gap-2">
           {analysis.id && (
-            <a
-              href={`/api/analyses/${analysis.id}/pdf`}
-              download={analysis.filename}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all mr-2"
-              title="Descargar PDF original"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Ver PDF
-            </a>
+            <>
+              <button
+                onClick={() => setShowPdfPreview(!showPdfPreview)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all mr-1 ${
+                  showPdfPreview 
+                    ? "bg-indigo-500 text-white" 
+                    : "text-zinc-400 bg-zinc-800/60 hover:bg-zinc-800 hover:text-zinc-200"
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                {showPdfPreview ? "Cerrar PDF" : "Ver PDF Original"}
+              </button>
+              <a
+                href={`/api/analyses/${analysis.id}/pdf`}
+                download={analysis.filename}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all mr-2"
+                title="Descargar PDF original"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Descargar
+              </a>
+            </>
           )}
           <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-1 rounded-md">
             {wordCount.toLocaleString()} palabras
@@ -226,84 +242,118 @@ export default function ExtractionView({
           })}
         </div>
 
-        {/* Text Content Area */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.15 }}
-            className={`
-              flex-1 flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden
-              ${fullscreen ? "fixed inset-4 z-50" : "relative"}
-            `}
-          >
-            {/* Toolbar */}
-            <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${PARSERS.find((p) => p.key === activeTab)?.color}`}
-                />
-                <span className="text-xs text-zinc-400 font-medium">
-                  {PARSERS.find((p) => p.key === activeTab)?.description}
-                </span>
+        {/* Text Content Area & PDF Preview Side-by-Side */}
+        <div className="flex-1 flex gap-6 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.15 }}
+              className={`
+                flex-1 flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden
+                ${fullscreen ? "fixed inset-4 z-50" : "relative"}
+              `}
+            >
+              {/* Toolbar */}
+              <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full ${PARSERS.find((p) => p.key === activeTab)?.color}`}
+                  />
+                  <span className="text-xs text-zinc-400 font-medium">
+                    {PARSERS.find((p) => p.key === activeTab)?.description}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleCopy}
+                    disabled={!currentText}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all disabled:opacity-30"
+                  >
+                    {copied ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                    {copied ? "Copiado" : "Copiar"}
+                  </button>
+                  <button
+                    onClick={() => setFullscreen(!fullscreen)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all"
+                  >
+                    {fullscreen ? (
+                      <Minimize2 className="w-3.5 h-3.5" />
+                    ) : (
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handleCopy}
-                  disabled={!currentText}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all disabled:opacity-30"
-                >
-                  {copied ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                  {copied ? "Copiado" : "Copiar"}
-                </button>
-                <button
-                  onClick={() => setFullscreen(!fullscreen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all"
-                >
-                  {fullscreen ? (
-                    <Minimize2 className="w-3.5 h-3.5" />
-                  ) : (
-                    <Maximize2 className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            {/* Text */}
-            <div className="flex-1 overflow-auto p-5">
-              {currentError && !currentText ? (
-                <div className="flex items-start gap-3 text-rose-300">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">
-                      Error en la extracción
-                    </p>
-                    <p className="text-xs text-rose-400/70 mt-1 font-mono">
-                      {currentError}
+              {/* Text */}
+              <div className="flex-1 overflow-auto p-5">
+                {currentError && !currentText ? (
+                  <div className="flex items-start gap-3 text-rose-300">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">
+                        Error en la extracción
+                      </p>
+                      <p className="text-xs text-rose-400/70 mt-1 font-mono">
+                        {currentError}
+                      </p>
+                    </div>
+                  </div>
+                ) : currentText ? (
+                  <pre className="text-sm text-zinc-300 font-mono whitespace-pre-wrap leading-relaxed">
+                    {currentText}
+                  </pre>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-600">
+                    <FileText className="w-10 h-10 mb-3 opacity-30" />
+                    <p className="text-sm">
+                      Este parser no produjo texto para este PDF
                     </p>
                   </div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* PDF Previewer Panel */}
+          <AnimatePresence>
+            {showPdfPreview && !fullscreen && (
+              <motion.div
+                initial={{ opacity: 0, width: 0, x: 20 }}
+                animate={{ opacity: 1, width: "50%", x: 0 }}
+                exit={{ opacity: 0, width: 0, x: 20 }}
+                className="flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden shadow-2xl"
+              >
+                <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-indigo-500/5">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                    <span className="text-xs font-semibold text-zinc-200">
+                      Vista Previa del PDF
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowPdfPreview(false)}
+                    className="p-1 rounded-lg hover:bg-white/10 text-zinc-400 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              ) : currentText ? (
-                <pre className="text-sm text-zinc-300 font-mono whitespace-pre-wrap leading-relaxed">
-                  {currentText}
-                </pre>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-zinc-600">
-                  <FileText className="w-10 h-10 mb-3 opacity-30" />
-                  <p className="text-sm">
-                    Este parser no produjo texto para este PDF
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </AnimatePresence>
+                <iframe
+                  src={`/api/analyses/${analysis.id}/pdf#toolbar=0`}
+                  className="w-full h-full border-none invert brightness-90 hue-rotate-180"
+                  title="PDF Preview"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Fullscreen backdrop */}
         {fullscreen && (

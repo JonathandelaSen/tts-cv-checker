@@ -122,6 +122,21 @@ export default function Home() {
     }
   };
 
+  // Handle clear all
+  const handleClearAll = async () => {
+    try {
+      const res = await fetch("/api/analyses", { method: "DELETE" });
+      if (res.ok) {
+        await fetchAnalyses();
+        setActiveAnalysisId(null);
+        setActiveAnalysis(null);
+        setShowUpload(true);
+      }
+    } catch {
+      // silent
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#09090f]">
       {/* Background ambient gradient */}
@@ -137,6 +152,7 @@ export default function Home() {
         onSelect={handleSelect}
         onNewAnalysis={handleNewAnalysis}
         onDelete={handleDelete}
+        onClearAll={handleClearAll}
       />
 
       {/* Main Content */}

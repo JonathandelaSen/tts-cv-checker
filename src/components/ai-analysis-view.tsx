@@ -9,6 +9,8 @@ import {
   Clock,
   Cpu,
   Briefcase,
+  Download,
+  FileDown,
 } from "lucide-react";
 
 interface AIAnalysisViewProps {
@@ -51,6 +53,39 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const handleExport = () => {
+    const report = `
+INFORME DE ANÁLISIS ATS
+-----------------------
+Archivo: ${analysis.id}
+Fecha: ${formatDate(analysis.ai_analyzed_at)}
+Modelo: ${analysis.ai_model}
+
+PUNTUACIÓN: ${score}/100 (${getScoreLabel()})
+
+FEEDBACK:
+${analysis.ai_feedback}
+
+PALABRAS CLAVE DETECTADAS:
+${keywords.join(", ") || "Ninguna"}
+
+ÁREAS DE MEJORA:
+${improvements.map((imp) => `- ${imp}`).join("\n") || "Sin sugerencias"}
+
+${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` : ""}
+    `.trim();
+
+    const blob = new Blob([report], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ATS_Report_${analysis.ai_analyzed_at.replace(/[:.]/g, "-")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -139,6 +174,13 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
                     Con oferta
                   </span>
                 )}
+                <button
+                  onClick={handleExport}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 px-2.5 py-1 rounded-md transition-all ml-auto"
+                >
+                  <FileDown className="w-3 h-3" />
+                  Exportar Informe
+                </button>
               </div>
             </div>
           </div>

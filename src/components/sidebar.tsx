@@ -27,6 +27,7 @@ interface SidebarProps {
   onSelect: (id: string) => void;
   onNewAnalysis: () => void;
   onDelete: (id: string) => void;
+  onClearAll: () => void;
 }
 
 export default function Sidebar({
@@ -204,10 +205,24 @@ export default function Sidebar({
 
       {/* Footer */}
       {!collapsed && (
-        <div className="px-3 py-3 border-t border-white/[0.06] shrink-0">
-          <div className="flex items-center gap-2 text-[11px] text-zinc-600">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{analyses.length} análisis guardados</span>
+        <div className="px-3 py-3 border-t border-white/[0.06] shrink-0 space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2 text-[11px] text-zinc-600 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{analyses.length} análisis</span>
+            </div>
+            {analyses.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm("¿Estás seguro de que quieres borrar todo el historial?")) {
+                    onClearAll();
+                  }
+                }}
+                className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors uppercase tracking-wider font-bold"
+              >
+                Borrar Todo
+              </button>
+            )}
           </div>
         </div>
       )}
