@@ -5,11 +5,9 @@ import {
   CheckCircle2,
   Star,
   ChevronRight,
-  Sparkles,
   Clock,
   Cpu,
   Briefcase,
-  Download,
   FileDown,
 } from "lucide-react";
 
@@ -47,7 +45,7 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
   };
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr + "Z");
+    const d = new Date(dateStr);
     return d.toLocaleDateString("es-ES", {
       day: "numeric",
       month: "long",

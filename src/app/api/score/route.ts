@@ -1,11 +1,28 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { getAnalysis, updateAnalysisWithAI } from "@/lib/db";
+import { getErrorMessage } from "@/lib/errors";
+import { createClient } from "@/lib/supabase/server";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+interface ScoreResponse {
+  score: number;
+  feedback: string;
+  keywordsFound?: string[];
+  improvements?: string[];
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const {
       analysisId,
       jobDescription,
@@ -19,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const analysis = getAnalysis(analysisId);
+    const analysis = await getAnalysis(supabase, analysisId);
     if (!analysis) {
       return NextResponse.json(
         { error: "Analysis not found" },
@@ -58,10 +75,10 @@ You must respond ONLY with a valid JSON using the following exact format:
     });
 
     const resultText = response.text || "{}";
-    const parsedResult = JSON.parse(resultText);
+    const parsedResult = JSON.parse(resultText) as ScoreResponse;
 
     // Save AI results to DB
-    const updated = updateAnalysisWithAI(analysisId, {
+    const updated = await updateAnalysisWithAI(supabase, analysisId, {
       ai_model: model,
       job_description: jobDescription || null,
       ai_score: parsedResult.score,
@@ -71,10 +88,10 @@ You must respond ONLY with a valid JSON using the following exact format:
     });
 
     return NextResponse.json(updated);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gemini ATS Error:", error);
     return NextResponse.json(
-      { error: "Failed to score CV with ATS" },
+      { error: "Failed to score CV with ATS", details: getErrorMessage(error) },
       { status: 500 }
     );
   }

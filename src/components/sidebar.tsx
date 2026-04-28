@@ -11,7 +11,10 @@ import {
   Sparkles,
   Clock,
   CheckCircle2,
+  LogOut,
+  UserCircle,
 } from "lucide-react";
+import { signOut } from "@/app/login/actions";
 
 export interface AnalysisSummary {
   id: string;
@@ -28,6 +31,7 @@ interface SidebarProps {
   onNewAnalysis: () => void;
   onDelete: (id: string) => void;
   onClearAll: () => void;
+  userEmail: string | null;
 }
 
 export default function Sidebar({
@@ -37,11 +41,12 @@ export default function Sidebar({
   onNewAnalysis,
   onDelete,
   onClearAll,
+  userEmail,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr + "Z");
+    const d = new Date(dateStr);
     const now = new Date();
     const diff = now.getTime() - d.getTime();
     const mins = Math.floor(diff / 60000);
@@ -137,11 +142,20 @@ export default function Sidebar({
         )}
 
         {analyses.map((a) => (
-          <button
+          <div
             key={a.id}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(a.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect(a.id);
+              }
+            }}
             className={`
               group w-full flex items-center gap-2.5 rounded-lg transition-all duration-150 text-left relative
+              cursor-pointer focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none
               ${collapsed ? "justify-center p-2" : "px-3 py-2.5"}
               ${
                 activeId === a.id
@@ -200,13 +214,13 @@ export default function Sidebar({
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
-          </button>
+          </div>
         ))}
       </div>
 
       {/* Footer */}
       {!collapsed && (
-        <div className="px-3 py-3 border-t border-white/[0.06] shrink-0 space-y-2">
+        <div className="px-3 py-3 border-t border-white/[0.06] shrink-0 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-[11px] text-zinc-600 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -224,6 +238,21 @@ export default function Sidebar({
                 Borrar Todo
               </button>
             )}
+          </div>
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2 min-w-0 text-[11px] text-zinc-500">
+              <UserCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{userEmail}</span>
+            </div>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="w-6 h-6 rounded-md flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </form>
           </div>
         </div>
       )}

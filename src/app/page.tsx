@@ -7,6 +7,7 @@ import ExtractionView from "@/components/extraction-view";
 import AIAnalysisView from "@/components/ai-analysis-view";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type ViewTab = "extraction" | "analysis";
 
@@ -40,6 +41,7 @@ export default function Home() {
   const [viewTab, setViewTab] = useState<ViewTab>("extraction");
   const [showUpload, setShowUpload] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Fetch analyses list
   const fetchAnalyses = useCallback(async () => {
@@ -55,8 +57,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchAnalyses();
+    void Promise.resolve().then(fetchAnalyses);
   }, [fetchAnalyses]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+  }, []);
 
   // Fetch single analysis detail
   const fetchAnalysisDetail = useCallback(async (id: string) => {
@@ -153,6 +162,7 @@ export default function Home() {
         onNewAnalysis={handleNewAnalysis}
         onDelete={handleDelete}
         onClearAll={handleClearAll}
+        userEmail={userEmail}
       />
 
       {/* Main Content */}

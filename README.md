@@ -2,6 +2,23 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Local Supabase
+
+This app uses Supabase Auth, Postgres, and Storage locally.
+
+```bash
+npm install
+npm run supabase:start
+cp .env.example .env.local
+```
+
+Use the publishable key printed by `npm run supabase:start` in `.env.local`.
+This repo is configured to avoid the default Supabase local ports:
+
+- App API: `http://127.0.0.1:55431`
+- Studio: `http://127.0.0.1:55433`
+- Database: `postgresql://postgres:postgres@127.0.0.1:55432/postgres`
+
 First, run the development server:
 
 ```bash

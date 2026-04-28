@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { UploadCloud, CheckCircle2, FileText, Loader2, Zap } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 
 interface UploadPhaseProps {
   onUploadComplete: (analysisId: string) => void;
@@ -71,8 +72,8 @@ export default function UploadPhase({ onUploadComplete }: UploadPhaseProps) {
 
       const data = await res.json();
       onUploadComplete(data.id);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

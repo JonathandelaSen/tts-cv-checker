@@ -4,12 +4,24 @@ import { promisify } from "util";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
-import { createAnalysis } from "@/lib/db";
+import { CV_PDFS_BUCKET, createAnalysis } from "@/lib/db";
+import { getErrorMessage } from "@/lib/errors";
+import { createClient } from "@/lib/supabase/server";
 
 const execFileAsync = promisify(execFile);
 
 export async function POST(req: NextRequest) {
+  let tempFilePath: string | null = null;
+
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
@@ -23,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Create temp file for scripts
     const tempDir = os.tmpdir();
-    const tempFilePath = path.join(tempDir, `upload-${Date.now()}.pdf`);
+    tempFilePath = path.join(tempDir, `upload-${Date.now()}.pdf`);
     await fs.writeFile(tempFilePath, buffer);
 
     // 1. Node.js Parsing (pdf-parse via isolated script)
@@ -44,8 +56,8 @@ export async function POST(req: NextRequest) {
       const parsedOut = JSON.parse(jsonStr || "{}");
       nodeText = parsedOut.text || null;
       if (parsedOut.error) nodeError = parsedOut.error;
-    } catch (e: any) {
-      nodeError = e.message;
+    } catch (e: unknown) {
+      nodeError = getErrorMessage(e);
     }
 
     // 2. Node.js Parsing (pdfjs-dist)
@@ -68,8 +80,8 @@ export async function POST(req: NextRequest) {
       const parsedOut = JSON.parse(jsonStr || "{}");
       pdfjsText = parsedOut.text || null;
       if (parsedOut.error) pdfjsError = parsedOut.error;
-    } catch (e: any) {
-      pdfjsError = e.message;
+    } catch (e: unknown) {
+      pdfjsError = getErrorMessage(e);
     }
 
     // 3. Python Parsing (pdfminer.six)
@@ -91,24 +103,33 @@ export async function POST(req: NextRequest) {
       const parsedOut = JSON.parse(jsonStr || "{}");
       pythonText = parsedOut.text || null;
       pythonError = parsedOut.error || null;
-    } catch (e: any) {
-      pythonError = e.message;
+    } catch (e: unknown) {
+      pythonError = getErrorMessage(e);
     }
 
-    // Save PDF to persistent storage
-    const pdfsDir = path.join(process.cwd(), "data", "pdfs");
-    await fs.mkdir(pdfsDir, { recursive: true });
-    const persistentPdfPath = path.join(pdfsDir, `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`);
-    await fs.copyFile(tempFilePath, persistentPdfPath);
+    const analysisId = crypto.randomUUID();
+    const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const pdfStoragePath = `${user.id}/${analysisId}-${safeFilename}`;
+    const { error: uploadError } = await supabase.storage
+      .from(CV_PDFS_BUCKET)
+      .upload(pdfStoragePath, buffer, {
+        contentType: "application/pdf",
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
 
     // Clean up temp file
     await fs.unlink(tempFilePath).catch(() => {});
+    tempFilePath = null;
 
     // Save to database
-    const analysis = createAnalysis({
+    const analysis = await createAnalysis(supabase, {
+      id: analysisId,
+      user_id: user.id,
       filename: file.name,
       file_size: file.size,
-      pdf_path: persistentPdfPath,
+      pdf_storage_path: pdfStoragePath,
       text_python: pythonText,
       text_pdfjs: pdfjsText,
       text_node: nodeText,
@@ -132,10 +153,13 @@ export async function POST(req: NextRequest) {
         node: nodeError,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (tempFilePath) {
+      await fs.unlink(tempFilePath).catch(() => {});
+    }
     console.error("API error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: getErrorMessage(error) },
       { status: 500 }
     );
   }

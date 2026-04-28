@@ -1,65 +1,6 @@
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
-import { v4 as uuidv4 } from "uuid";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-// ---------------------------------------------------------------------------
-// Database singleton
-// ---------------------------------------------------------------------------
-
-const DB_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DB_DIR, "cv-checker.db");
-
-let _db: Database.Database | null = null;
-
-function getDb(): Database.Database {
-  if (_db) return _db;
-
-  // Ensure directory exists
-  if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
-  }
-
-  _db = new Database(DB_PATH);
-  _db.pragma("journal_mode = WAL");
-  _db.pragma("foreign_keys = ON");
-
-  // Create table if not exists
-  _db.exec(`
-    CREATE TABLE IF NOT EXISTS analyses (
-      id TEXT PRIMARY KEY,
-      filename TEXT NOT NULL,
-      file_size INTEGER,
-      pdf_path TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-
-      text_python TEXT,
-      text_pdfjs TEXT,
-      text_node TEXT,
-      extract_error_python TEXT,
-      extract_error_pdfjs TEXT,
-      extract_error_node TEXT,
-
-      ai_model TEXT,
-      job_description TEXT,
-      ai_score INTEGER,
-      ai_feedback TEXT,
-      ai_keywords TEXT,
-      ai_improvements TEXT,
-      ai_analyzed_at TEXT
-    );
-  `);
-
-  // Migration: add pdf_path if missing (for existing DBs)
-  try {
-    _db.exec(`ALTER TABLE analyses ADD COLUMN pdf_path TEXT;`);
-  } catch {
-    // column already exists
-  }
-
-  return _db;
-}
+export const CV_PDFS_BUCKET = "cv-pdfs";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,9 +8,10 @@ function getDb(): Database.Database {
 
 export interface Analysis {
   id: string;
+  user_id: string;
   filename: string;
   file_size: number | null;
-  pdf_path: string | null;
+  pdf_storage_path: string | null;
   created_at: string;
   updated_at: string;
   text_python: string | null;
@@ -100,9 +42,11 @@ export interface AnalysisSummary {
 // ---------------------------------------------------------------------------
 
 export interface CreateAnalysisInput {
+  id: string;
+  user_id: string;
   filename: string;
   file_size: number | null;
-  pdf_path: string | null;
+  pdf_storage_path: string | null;
   text_python: string | null;
   text_pdfjs: string | null;
   text_node: string | null;
@@ -111,22 +55,30 @@ export interface CreateAnalysisInput {
   extract_error_node: string | null;
 }
 
-export function createAnalysis(data: CreateAnalysisInput): Analysis {
-  const db = getDb();
-  const id = uuidv4();
-  const stmt = db.prepare(`
-    INSERT INTO analyses (
-      id, filename, file_size, pdf_path,
-      text_python, text_pdfjs, text_node,
-      extract_error_python, extract_error_pdfjs, extract_error_node
-    ) VALUES (
-      @id, @filename, @file_size, @pdf_path,
-      @text_python, @text_pdfjs, @text_node,
-      @extract_error_python, @extract_error_pdfjs, @extract_error_node
-    )
-  `);
-  stmt.run({ id, ...data });
-  return getAnalysis(id)!;
+function normalizeAnalysis(row: Analysis): Analysis {
+  return {
+    ...row,
+    ai_keywords: Array.isArray(row.ai_keywords)
+      ? JSON.stringify(row.ai_keywords)
+      : row.ai_keywords,
+    ai_improvements: Array.isArray(row.ai_improvements)
+      ? JSON.stringify(row.ai_improvements)
+      : row.ai_improvements,
+  };
+}
+
+export async function createAnalysis(
+  supabase: SupabaseClient,
+  data: CreateAnalysisInput
+): Promise<Analysis> {
+  const { data: analysis, error } = await supabase
+    .from("analyses")
+    .insert(data)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return normalizeAnalysis(analysis as Analysis);
 }
 
 export interface UpdateAIInput {
@@ -138,63 +90,73 @@ export interface UpdateAIInput {
   ai_improvements: string[];
 }
 
-export function updateAnalysisWithAI(
+export async function updateAnalysisWithAI(
+  supabase: SupabaseClient,
   id: string,
   data: UpdateAIInput
-): Analysis | null {
-  const db = getDb();
-  const stmt = db.prepare(`
-    UPDATE analyses SET
-      ai_model = @ai_model,
-      job_description = @job_description,
-      ai_score = @ai_score,
-      ai_feedback = @ai_feedback,
-      ai_keywords = @ai_keywords,
-      ai_improvements = @ai_improvements,
-      ai_analyzed_at = datetime('now'),
-      updated_at = datetime('now')
-    WHERE id = @id
-  `);
-  stmt.run({
-    id,
-    ai_model: data.ai_model,
-    job_description: data.job_description,
-    ai_score: data.ai_score,
-    ai_feedback: data.ai_feedback,
-    ai_keywords: JSON.stringify(data.ai_keywords),
-    ai_improvements: JSON.stringify(data.ai_improvements),
-  });
-  return getAnalysis(id);
+): Promise<Analysis | null> {
+  const { data: analysis, error } = await supabase
+    .from("analyses")
+    .update({
+      ai_model: data.ai_model,
+      job_description: data.job_description,
+      ai_score: data.ai_score,
+      ai_feedback: data.ai_feedback,
+      ai_keywords: data.ai_keywords,
+      ai_improvements: data.ai_improvements,
+      ai_analyzed_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return analysis ? normalizeAnalysis(analysis as Analysis) : null;
 }
 
-export function getAnalysis(id: string): Analysis | null {
-  const db = getDb();
-  const row = db
-    .prepare("SELECT * FROM analyses WHERE id = ?")
-    .get(id) as Analysis | undefined;
-  return row ?? null;
+export async function getAnalysis(
+  supabase: SupabaseClient,
+  id: string
+): Promise<Analysis | null> {
+  const { data: analysis, error } = await supabase
+    .from("analyses")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return analysis ? normalizeAnalysis(analysis as Analysis) : null;
 }
 
-export function listAnalyses(): AnalysisSummary[] {
-  const db = getDb();
-  return db
-    .prepare(
-      "SELECT id, filename, created_at, ai_score, ai_analyzed_at FROM analyses ORDER BY created_at DESC"
-    )
-    .all() as AnalysisSummary[];
+export async function listAnalyses(
+  supabase: SupabaseClient
+): Promise<AnalysisSummary[]> {
+  const { data, error } = await supabase
+    .from("analyses")
+    .select("id, filename, created_at, ai_score, ai_analyzed_at")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as AnalysisSummary[];
 }
 
-export function deleteAnalysis(id: string): boolean {
-  const db = getDb();
-  // Get analysis to find PDF path before deleting
-  const analysis = getAnalysis(id);
-  const result = db.prepare("DELETE FROM analyses WHERE id = ?").run(id);
-  if (result.changes > 0 && analysis?.pdf_path) {
-    try {
-      fs.unlinkSync(analysis.pdf_path);
-    } catch {
-      // file may already be gone
-    }
+export async function deleteAnalysis(
+  supabase: SupabaseClient,
+  id: string
+): Promise<boolean> {
+  const analysis = await getAnalysis(supabase, id);
+  if (!analysis) return false;
+
+  if (analysis.pdf_storage_path) {
+    const { error: storageError } = await supabase.storage
+      .from(CV_PDFS_BUCKET)
+      .remove([analysis.pdf_storage_path]);
+
+    if (storageError) throw storageError;
   }
-  return result.changes > 0;
+
+  const { error } = await supabase.from("analyses").delete().eq("id", id);
+  if (error) throw error;
+
+  return true;
 }

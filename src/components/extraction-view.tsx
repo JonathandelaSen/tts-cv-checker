@@ -19,6 +19,7 @@ import {
   Eye,
   X,
 } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 
 interface ExtractionData {
   text_python: string | null;
@@ -74,7 +75,7 @@ export default function ExtractionView({
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
-  const [selectedModel, setSelectedModel] = useState("gemini-3.1-pro-preview");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
@@ -137,8 +138,8 @@ export default function ExtractionView({
       }
 
       onAIAnalysisComplete();
-    } catch (err: any) {
-      setAiError(err.message);
+    } catch (err: unknown) {
+      setAiError(getErrorMessage(err));
     } finally {
       setLoadingAI(false);
     }
