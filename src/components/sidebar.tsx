@@ -36,6 +36,7 @@ export default function Sidebar({
   onSelect,
   onNewAnalysis,
   onDelete,
+  onClearAll,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
