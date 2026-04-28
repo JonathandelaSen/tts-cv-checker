@@ -22,6 +22,8 @@ interface AIAnalysisViewProps {
     ai_model: string;
     ai_analyzed_at: string;
     job_description: string | null;
+    id: string;
+    filename: string;
   };
 }
 
@@ -59,7 +61,8 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
     const report = `
 INFORME DE ANÁLISIS ATS
 -----------------------
-Archivo: ${analysis.id}
+Archivo: ${analysis.filename}
+ID de Análisis: ${analysis.id}
 Fecha: ${formatDate(analysis.ai_analyzed_at)}
 Modelo: ${analysis.ai_model}
 

@@ -257,6 +257,8 @@ export default function Home() {
                         ai_model: activeAnalysis.ai_model!,
                         ai_analyzed_at: activeAnalysis.ai_analyzed_at!,
                         job_description: activeAnalysis.job_description,
+                        id: activeAnalysis.id,
+                        filename: activeAnalysis.filename,
                       }}
                     />
                   </motion.div>
