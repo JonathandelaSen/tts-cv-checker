@@ -37,15 +37,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const systemPrompt = `Eres un estricto ATS (Applicant Tracking System). Tu trabajo es analizar el texto extraído de un currículum PDF y evaluarlo.
-${jobDescription ? `\nEl usuario proporcionó la siguiente descripción de la oferta de trabajo:\n${jobDescription}\nCompara el CV con esta oferta de manera estricta.` : `No se ha proporcionado una descripción de oferta. Haz una evaluación general de la estructura, legibilidad para ATS y claridad de las habilidades.`}
+    const systemPrompt = `You are a strict ATS (Applicant Tracking System). Your job is to analyze the extracted text from a PDF resume and evaluate it.
+${jobDescription ? `\nThe user provided the following job description:\n${jobDescription}\nStrictly compare the resume against this job description.` : `No job description was provided. Perform a general evaluation of structure, ATS readability, and clarity of skills.`}
 
-Debes responder ÚNICAMENTE con un JSON válido usando el siguiente formato exacto:
+You must respond ONLY with a valid JSON using the following exact format:
 {
-  "score": <número de 0 a 100>,
-  "feedback": "<Resumen conciso y directo de qué tal se extrajo el texto (ej. si hay caracteres raros) y cómo se ajusta a lo que busca un ATS>",
-  "keywordsFound": ["<palabra clave 1>", "<palabra clave 2>"],
-  "improvements": ["<mejora concisa 1>", "<mejora concisa 2>"]
+  "score": <number from 0 to 100>,
+  "feedback": "<Concise and direct summary of how well the text was extracted (e.g. if there are weird characters) and how it fits what an ATS looks for. (Reply in Spanish)>",
+  "keywordsFound": ["<keyword 1>", "<keyword 2>"],
+  "improvements": ["<concise improvement 1 in Spanish>", "<concise improvement 2 in Spanish>"]
 }`;
 
     const response = await ai.models.generateContent({

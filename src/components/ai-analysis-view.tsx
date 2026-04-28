@@ -60,7 +60,7 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
       transition={{ duration: 0.5 }}
       className="flex-1 overflow-y-auto p-6"
     >
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Score Header */}
         <div
           className={`rounded-2xl border ${colors.border} ${colors.bg} p-8 backdrop-blur-sm`}
