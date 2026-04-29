@@ -9,7 +9,9 @@ import {
   Cpu,
   Briefcase,
   FileDown,
+  FileSearch,
 } from "lucide-react";
+import type { AnalysisMode, AIContext } from "@/lib/db";
 
 interface AIAnalysisViewProps {
   analysis: {
@@ -19,7 +21,9 @@ interface AIAnalysisViewProps {
     ai_improvements: string; // JSON
     ai_model: string;
     ai_analyzed_at: string;
+    analysis_mode: AnalysisMode;
     job_description: string | null;
+    ai_context: AIContext | null;
     id: string;
     filename: string;
   };
@@ -150,9 +154,20 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
                   >
                     {getScoreLabel()}
                   </span>
+                  {analysis.analysis_mode === "general" ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300">
+                      <FileSearch className="w-3 h-3" />
+                      Análisis General
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                      <Briefcase className="w-3 h-3" />
+                      Match con Oferta
+                    </span>
+                  )}
                 </div>
                 <h3 className="text-2xl font-bold text-zinc-100">
-                  ATS Match Score
+                  {analysis.analysis_mode === "general" ? "CV Quality Score" : "ATS Match Score"}
                 </h3>
               </div>
               <p className="text-zinc-400 leading-relaxed text-sm">
@@ -187,16 +202,34 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
           </div>
         </div>
 
-        {/* Job Description (if any) */}
-        {analysis.job_description && (
+        {/* Context: General analysis questionnaire */}
+        {analysis.analysis_mode === "general" && analysis.ai_context?.additionalContext && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6"
+            className="rounded-2xl border border-violet-500/10 bg-violet-500/[0.03] p-6"
           >
-            <h4 className="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3">
-              <Briefcase className="w-4 h-4 text-indigo-400" />
+            <h4 className="text-sm font-semibold text-violet-300 flex items-center gap-2 mb-3">
+              <FileSearch className="w-4 h-4" />
+              Contexto del Análisis
+            </h4>
+            <p className="text-xs text-zinc-400 italic bg-[#0a0a12] rounded-lg p-3 border border-white/[0.04]">
+              {analysis.ai_context.additionalContext}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Job Description (if any) */}
+        {analysis.analysis_mode === "job_match" && analysis.job_description && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-2xl border border-emerald-500/10 bg-emerald-500/[0.03] p-6"
+          >
+            <h4 className="text-sm font-semibold text-emerald-300 flex items-center gap-2 mb-3">
+              <Briefcase className="w-4 h-4" />
               Oferta de Trabajo Analizada
             </h4>
             <div className="text-sm text-zinc-400 bg-[#0a0a12] rounded-xl p-4 border border-white/[0.04] whitespace-pre-wrap max-h-96 overflow-y-auto">

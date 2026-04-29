@@ -13,13 +13,17 @@ import {
   CheckCircle2,
   LogOut,
   UserCircle,
+  FileSearch,
+  Briefcase,
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
+import type { AnalysisMode } from "@/lib/db";
 
 export interface AnalysisSummary {
   id: string;
   filename: string;
   created_at: string;
+  analysis_mode: AnalysisMode;
   ai_score: number | null;
   ai_analyzed_at: string | null;
 }
@@ -187,10 +191,17 @@ export default function Sidebar({
                     {formatDate(a.created_at)}
                   </span>
                   {a.ai_score !== null ? (
-                    <span
-                      className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${getScoreColor(a.ai_score)}`}
-                    >
-                      {a.ai_score}
+                    <span className="flex items-center gap-1">
+                      <span
+                        className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${getScoreColor(a.ai_score)}`}
+                      >
+                        {a.ai_score}
+                      </span>
+                      {a.analysis_mode === "general" ? (
+                        <FileSearch className="w-3 h-3 text-violet-400" />
+                      ) : (
+                        <Briefcase className="w-3 h-3 text-emerald-400" />
+                      )}
                     </span>
                   ) : (
                     <span className="text-[11px] text-zinc-600 flex items-center gap-0.5">

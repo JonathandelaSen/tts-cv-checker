@@ -8,6 +8,7 @@ import AIAnalysisView from "@/components/ai-analysis-view";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import type { AnalysisMode, AIContext } from "@/lib/db";
 
 type ViewTab = "extraction" | "analysis";
 
@@ -23,8 +24,10 @@ interface FullAnalysis {
   extract_error_python: string | null;
   extract_error_pdfjs: string | null;
   extract_error_node: string | null;
+  analysis_mode: AnalysisMode;
   ai_model: string | null;
   job_description: string | null;
+  ai_context: AIContext | null;
   ai_score: number | null;
   ai_feedback: string | null;
   ai_keywords: string | null;
@@ -266,7 +269,9 @@ export default function Home() {
                         ai_improvements: activeAnalysis.ai_improvements!,
                         ai_model: activeAnalysis.ai_model!,
                         ai_analyzed_at: activeAnalysis.ai_analyzed_at!,
+                        analysis_mode: activeAnalysis.analysis_mode,
                         job_description: activeAnalysis.job_description,
+                        ai_context: activeAnalysis.ai_context,
                         id: activeAnalysis.id,
                         filename: activeAnalysis.filename,
                       }}

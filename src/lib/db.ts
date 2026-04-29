@@ -6,6 +6,12 @@ export const CV_PDFS_BUCKET = "cv-pdfs";
 // Types
 // ---------------------------------------------------------------------------
 
+export type AnalysisMode = "general" | "job_match";
+
+export interface AIContext {
+  additionalContext?: string;
+}
+
 export interface Analysis {
   id: string;
   user_id: string;
@@ -20,8 +26,10 @@ export interface Analysis {
   extract_error_python: string | null;
   extract_error_pdfjs: string | null;
   extract_error_node: string | null;
+  analysis_mode: AnalysisMode;
   ai_model: string | null;
   job_description: string | null;
+  ai_context: AIContext | null;
   ai_score: number | null;
   ai_feedback: string | null;
   ai_keywords: string | null; // JSON stringified array
@@ -33,6 +41,7 @@ export interface AnalysisSummary {
   id: string;
   filename: string;
   created_at: string;
+  analysis_mode: AnalysisMode;
   ai_score: number | null;
   ai_analyzed_at: string | null;
 }
@@ -82,8 +91,10 @@ export async function createAnalysis(
 }
 
 export interface UpdateAIInput {
+  analysis_mode: AnalysisMode;
   ai_model: string;
   job_description: string | null;
+  ai_context: AIContext | null;
   ai_score: number;
   ai_feedback: string;
   ai_keywords: string[];
@@ -98,8 +109,10 @@ export async function updateAnalysisWithAI(
   const { data: analysis, error } = await supabase
     .from("analyses")
     .update({
+      analysis_mode: data.analysis_mode,
       ai_model: data.ai_model,
       job_description: data.job_description,
+      ai_context: data.ai_context,
       ai_score: data.ai_score,
       ai_feedback: data.ai_feedback,
       ai_keywords: data.ai_keywords,
@@ -133,7 +146,7 @@ export async function listAnalyses(
 ): Promise<AnalysisSummary[]> {
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, filename, created_at, ai_score, ai_analyzed_at")
+    .select("id, filename, created_at, analysis_mode, ai_score, ai_analyzed_at")
     .order("created_at", { ascending: false });
 
   if (error) throw error;

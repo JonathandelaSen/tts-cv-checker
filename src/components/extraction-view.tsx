@@ -9,17 +9,15 @@ import {
   Maximize2,
   Minimize2,
   AlertCircle,
-  Sparkles,
-  Briefcase,
-  Cpu,
-  Loader2,
-  ChevronRight,
-  ArrowRight,
   Download,
   Eye,
   X,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
+import type { AnalysisMode, AIContext } from "@/lib/db";
+import AnalysisModeSelector from "./analysis-mode-selector";
+import GeneralAnalysisForm from "./general-analysis-form";
+import JobMatchForm from "./job-match-form";
 
 interface ExtractionData {
   text_python: string | null;
@@ -74,11 +72,12 @@ export default function ExtractionView({
   const [activeTab, setActiveTab] = useState<ParserTab>("python");
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [jobDescription, setJobDescription] = useState("");
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+
+  // Analysis mode state
+  const [selectedMode, setSelectedMode] = useState<AnalysisMode | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const getTextForTab = (tab: ParserTab) => {
     switch (tab) {
@@ -117,7 +116,7 @@ export default function ExtractionView({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleAIAnalysis = async () => {
+  const handleGeneralAnalysis = async (context: AIContext, model: string) => {
     setLoadingAI(true);
     setAiError(null);
 
@@ -127,8 +126,41 @@ export default function ExtractionView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           analysisId: analysis.id,
-          jobDescription: jobDescription.trim() || undefined,
-          model: selectedModel,
+          mode: "general",
+          context,
+          model,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Error en el análisis IA");
+      }
+
+      onAIAnalysisComplete();
+    } catch (err: unknown) {
+      setAiError(getErrorMessage(err));
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const handleJobMatchAnalysis = async (
+    jobDescription: string,
+    model: string
+  ) => {
+    setLoadingAI(true);
+    setAiError(null);
+
+    try {
+      const res = await fetch("/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: analysis.id,
+          mode: "job_match",
+          jobDescription,
+          model,
         }),
       });
 
@@ -168,8 +200,8 @@ export default function ExtractionView({
               <button
                 onClick={() => setShowPdfPreview(!showPdfPreview)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all mr-1 ${
-                  showPdfPreview 
-                    ? "bg-indigo-500 text-white" 
+                  showPdfPreview
+                    ? "bg-indigo-500 text-white"
                     : "text-zinc-400 bg-zinc-800/60 hover:bg-zinc-800 hover:text-zinc-200"
                 }`}
               >
@@ -197,7 +229,7 @@ export default function ExtractionView({
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col overflow-hidden p-6 gap-6">
+      <div className="flex-1 flex flex-col overflow-auto p-6 gap-6">
         {/* Parser Tabs */}
         <div className="shrink-0 flex gap-2">
           {PARSERS.map((parser) => {
@@ -244,7 +276,7 @@ export default function ExtractionView({
         </div>
 
         {/* Text Content Area & PDF Preview Side-by-Side */}
-        <div className="flex-1 flex gap-6 overflow-hidden">
+        <div className="flex-1 flex gap-6 min-h-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -366,99 +398,30 @@ export default function ExtractionView({
 
         {/* Phase 2 - AI Analysis Section */}
         {analysis.ai_score === null && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="shrink-0 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs font-medium text-violet-300">
-                <Sparkles className="w-3.5 h-3.5" />
-                Fase 2 — Análisis con Inteligencia Artificial
-              </div>
-              <span className="text-xs text-zinc-600">Opcional</span>
-            </div>
-
-            <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
-              <div className="space-y-3">
-                {/* Job description */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-zinc-400 mb-1.5">
-                    <Briefcase className="w-3.5 h-3.5" />
-                    Descripción de la oferta
-                    <span className="text-[10px] text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
-                      Opcional
-                    </span>
-                  </label>
-                  <textarea
-                    placeholder="Pega aquí la oferta de trabajo para una comparación más precisa..."
-                    className="w-full h-48 px-4 py-3 rounded-xl bg-[#0a0a12] border border-white/[0.06] text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/10 transition-all"
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                  />
-                </div>
-
-                {/* Model selector */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-zinc-400 mb-1.5">
-                    <Cpu className="w-3.5 h-3.5" />
-                    Modelo de IA
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full h-10 px-4 rounded-xl bg-[#0a0a12] border border-white/[0.06] text-sm text-zinc-300 focus:outline-none focus:border-indigo-500/40 appearance-none cursor-pointer"
-                    >
-                      <option value="gemini-3.1-pro-preview">
-                        Gemini 3.1 Pro Preview (Más Potente)
-                      </option>
-                      <option value="gemini-2.5-pro">
-                        Gemini 2.5 Pro
-                      </option>
-                      <option value="gemini-2.5-flash">
-                        Gemini 2.5 Flash (Rápido)
-                      </option>
-                    </select>
-                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                      <ChevronRight className="w-4 h-4 text-zinc-500 rotate-90" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Analyze button */}
-              <button
-                onClick={handleAIAnalysis}
-                disabled={loadingAI}
-                className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-xl shadow-violet-900/30 transition-all active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed h-fit"
-              >
-                {loadingAI ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Analizando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Analizar con IA
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </div>
-
-            {aiError && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-3 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm"
-              >
-                {aiError}
-              </motion.div>
+          <AnimatePresence mode="wait">
+            {selectedMode === null ? (
+              <AnalysisModeSelector
+                key="mode-selector"
+                onSelectMode={setSelectedMode}
+              />
+            ) : selectedMode === "general" ? (
+              <GeneralAnalysisForm
+                key="general-form"
+                onSubmit={handleGeneralAnalysis}
+                onBack={() => setSelectedMode(null)}
+                loading={loadingAI}
+                error={aiError}
+              />
+            ) : (
+              <JobMatchForm
+                key="job-match-form"
+                onSubmit={handleJobMatchAnalysis}
+                onBack={() => setSelectedMode(null)}
+                loading={loadingAI}
+                error={aiError}
+              />
             )}
-          </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </div>
