@@ -39,6 +39,19 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const hasAuthCode = request.nextUrl.searchParams.has("code");
+
+  if (hasAuthCode && (pathname === "/" || pathname === "/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    url.searchParams.delete("redirectedFrom");
+
+    if (!url.searchParams.has("next")) {
+      url.searchParams.set("next", "/account/update-password");
+    }
+
+    return NextResponse.redirect(url);
+  }
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();

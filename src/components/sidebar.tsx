@@ -10,15 +10,12 @@ import {
   Trash2,
   Sparkles,
   Clock,
-  CheckCircle2,
-  LogOut,
   UserCircle,
   FileSearch,
   Briefcase,
   FolderOpen,
   Settings,
 } from "lucide-react";
-import { signOut } from "@/app/login/actions";
 import type { AnalysisMode } from "@/lib/db";
 
 export interface AnalysisSummary {
@@ -35,7 +32,6 @@ export interface AnalysisSummary {
 
 interface SidebarProps {
   analyses: AnalysisSummary[];
-  cvCount: number;
   activeId: string | null;
   activeView: "new" | "analysis" | "cvs" | "settings";
   onSelect: (id: string) => void;
@@ -43,13 +39,11 @@ interface SidebarProps {
   onOpenCVs: () => void;
   onOpenSettings: () => void;
   onDelete: (id: string) => void;
-  onClearAll: () => void;
   userEmail: string | null;
 }
 
 export default function Sidebar({
   analyses,
-  cvCount,
   activeId,
   activeView,
   onSelect,
@@ -57,7 +51,6 @@ export default function Sidebar({
   onOpenCVs,
   onOpenSettings,
   onDelete,
-  onClearAll,
   userEmail,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -148,18 +141,6 @@ export default function Sidebar({
         >
           <FolderOpen className="w-4 h-4 shrink-0" />
           {!collapsed && <span>Mis CVs</span>}
-        </button>
-        <button
-          onClick={onOpenSettings}
-          className={`
-            w-full flex items-center gap-2 rounded-lg font-medium transition-all duration-150
-            ${activeView === "settings" ? "bg-white/[0.08] text-zinc-100" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}
-            ${collapsed ? "justify-center p-2" : "px-3 py-2.5 text-sm"}
-          `}
-          title="Configuración"
-        >
-          <Settings className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>Configuración</span>}
         </button>
       </div>
 
@@ -353,43 +334,28 @@ export default function Sidebar({
       </div>
 
       {/* Footer */}
-      {!collapsed && (
-        <div className="px-3 py-3 border-t border-white/[0.06] shrink-0 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2 text-[11px] text-zinc-600 font-medium">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{analyses.length} análisis · {cvCount} CVs</span>
-            </div>
-            {analyses.length > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm("¿Estás seguro de que quieres borrar todo el historial?")) {
-                    onClearAll();
-                  }
-                }}
-                className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors uppercase tracking-wider font-bold"
-              >
-                Borrar Todo
-              </button>
-            )}
-          </div>
+      <div className="px-3 py-3 border-t border-white/[0.06] shrink-0 space-y-3">
+        <button
+          onClick={onOpenSettings}
+          className={`
+            w-full flex items-center gap-2 rounded-lg font-medium transition-all duration-150
+            ${activeView === "settings" ? "bg-white/[0.08] text-zinc-100" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}
+            ${collapsed ? "justify-center p-2" : "px-3 py-2.5 text-sm"}
+          `}
+          title="Configuración"
+        >
+          <Settings className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>Configuración</span>}
+        </button>
+        {!collapsed && (
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 min-w-0 text-[11px] text-zinc-500">
               <UserCircle className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{userEmail}</span>
             </div>
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="w-6 h-6 rounded-md flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-                title="Cerrar sesión"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </form>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </motion.aside>
   );
 }

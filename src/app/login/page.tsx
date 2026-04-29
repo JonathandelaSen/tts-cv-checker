@@ -3,7 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { FileText } from "lucide-react";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{
+    accountDeleted?: string;
+    resetError?: string;
+  }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,7 +41,18 @@ export default async function LoginPage() {
             </h1>
           </div>
 
-          <AuthForm />
+          <AuthForm
+            initialError={
+              params.resetError
+                ? "El enlace de recuperación no es válido o ha caducado."
+                : undefined
+            }
+            initialMessage={
+              params.accountDeleted
+                ? "Tu cuenta se ha borrado correctamente."
+                : undefined
+            }
+          />
         </section>
       </div>
     </main>

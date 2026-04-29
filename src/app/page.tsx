@@ -229,22 +229,6 @@ export default function Home() {
     }
   };
 
-  // Handle clear all
-  const handleClearAll = async () => {
-    try {
-      const res = await fetch("/api/analyses", { method: "DELETE" });
-      if (res.ok) {
-        await fetchAnalyses();
-        setActiveAnalysisId(null);
-        setActiveAnalysis(null);
-        setActiveView("new");
-        window.history.replaceState(null, "", "/");
-      }
-    } catch {
-      // silent
-    }
-  };
-
   return (
     <div className="flex h-screen overflow-hidden bg-[#09090f]">
       {/* Background ambient gradient */}
@@ -256,7 +240,6 @@ export default function Home() {
       {/* Sidebar */}
       <Sidebar
         analyses={analyses}
-        cvCount={cvs.length}
         activeId={activeAnalysisId}
         activeView={activeView}
         onSelect={handleSelect}
@@ -264,7 +247,6 @@ export default function Home() {
         onOpenCVs={handleOpenCVs}
         onOpenSettings={handleOpenSettings}
         onDelete={handleDelete}
-        onClearAll={handleClearAll}
         userEmail={userEmail}
       />
 
@@ -314,6 +296,7 @@ export default function Home() {
               <SettingsView
                 geminiApiKey={geminiApiKey}
                 onGeminiApiKeyChange={setGeminiApiKey}
+                userEmail={userEmail}
               />
             </motion.div>
           ) : loadingDetail ? (
