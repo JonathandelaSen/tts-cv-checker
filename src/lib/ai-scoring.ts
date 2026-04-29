@@ -13,15 +13,6 @@ export interface AIScoreResult {
   jobKeyData: JobKeyData | null;
 }
 
-let googleAI: GoogleGenAI | null = null;
-
-function getGoogleAI() {
-  if (!googleAI) {
-    googleAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  }
-  return googleAI;
-}
-
 function cleanArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string");
@@ -136,6 +127,7 @@ function parseAIResult(rawText: string): AIScoreResult {
 }
 
 export async function scoreCVWithAI(input: {
+  apiKey: string;
   mode: AnalysisMode;
   text: string;
   model: string;
@@ -147,8 +139,9 @@ export async function scoreCVWithAI(input: {
     input.mode === "general"
       ? buildGeneralPrompt(input.context ?? null)
       : buildJobMatchPrompt(input.jobDescription ?? "", input.jobUrl);
+  const googleAI = new GoogleGenAI({ apiKey: input.apiKey });
 
-  const response = await getGoogleAI().models.generateContent({
+  const response = await googleAI.models.generateContent({
     model: input.model,
     contents: [{ role: "user", parts: [{ text: input.text }] }],
     config: {

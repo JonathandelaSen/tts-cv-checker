@@ -6,13 +6,15 @@ import NewAnalysisFlow from "@/components/new-analysis-flow";
 import CVLibrary from "@/components/cv-library";
 import ExtractionView from "@/components/extraction-view";
 import AIAnalysisView from "@/components/ai-analysis-view";
+import SettingsView from "@/components/settings-view";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { AnalysisMode, AIContext, CVSummary } from "@/lib/db";
+import { getStoredGeminiApiKey } from "@/lib/browser-preferences";
 
 type ViewTab = "extraction" | "analysis";
-type AppView = "new" | "analysis" | "cvs";
+type AppView = "new" | "analysis" | "cvs" | "settings";
 
 interface FullAnalysis {
   id: string;
@@ -61,6 +63,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<AppView>("new");
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [geminiApiKey, setGeminiApiKey] = useState("");
 
   // Fetch analyses list
   const fetchAnalyses = useCallback(async () => {
@@ -98,6 +101,15 @@ export default function Home() {
     });
   }, []);
 
+  useEffect(() => {
+    const syncGeminiApiKey = () => setGeminiApiKey(getStoredGeminiApiKey());
+
+    syncGeminiApiKey();
+    window.addEventListener("storage", syncGeminiApiKey);
+
+    return () => window.removeEventListener("storage", syncGeminiApiKey);
+  }, []);
+
   // Fetch single analysis detail
   const fetchAnalysisDetail = useCallback(async (id: string) => {
     setLoadingDetail(true);
@@ -133,6 +145,12 @@ export default function Home() {
         setActiveAnalysisId(null);
         setActiveAnalysis(null);
       });
+    } else if (view === "settings") {
+      queueMicrotask(() => {
+        setActiveView("settings");
+        setActiveAnalysisId(null);
+        setActiveAnalysis(null);
+      });
     }
   }, [fetchAnalysisDetail]);
 
@@ -162,6 +180,13 @@ export default function Home() {
     setActiveAnalysis(null);
     window.history.replaceState(null, "", "/?view=cvs");
     fetchCVs();
+  };
+
+  const handleOpenSettings = () => {
+    setActiveView("settings");
+    setActiveAnalysisId(null);
+    setActiveAnalysis(null);
+    window.history.replaceState(null, "", "/?view=settings");
   };
 
   // Handle analysis creation complete
@@ -237,6 +262,7 @@ export default function Home() {
         onSelect={handleSelect}
         onNewAnalysis={handleNewAnalysis}
         onOpenCVs={handleOpenCVs}
+        onOpenSettings={handleOpenSettings}
         onDelete={handleDelete}
         onClearAll={handleClearAll}
         userEmail={userEmail}
@@ -257,6 +283,9 @@ export default function Home() {
                 cvs={cvs}
                 onCVCreated={fetchCVs}
                 onAnalysisCreated={handleAnalysisCreated}
+                geminiApiKey={geminiApiKey}
+                hasGeminiApiKey={geminiApiKey.length > 0}
+                onOpenSettings={handleOpenSettings}
               />
             </motion.div>
           ) : activeView === "cvs" ? (
@@ -272,6 +301,19 @@ export default function Home() {
                 analyses={analyses}
                 onRefresh={fetchCVs}
                 onOpenAnalysis={handleSelect}
+              />
+            </motion.div>
+          ) : activeView === "settings" ? (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              <SettingsView
+                geminiApiKey={geminiApiKey}
+                onGeminiApiKeyChange={setGeminiApiKey}
               />
             </motion.div>
           ) : loadingDetail ? (
@@ -343,6 +385,9 @@ export default function Home() {
                     <ExtractionView
                       analysis={activeAnalysis}
                       onAIAnalysisComplete={handleAIComplete}
+                      geminiApiKey={geminiApiKey}
+                      hasGeminiApiKey={geminiApiKey.length > 0}
+                      onOpenSettings={handleOpenSettings}
                     />
                   </motion.div>
                 ) : activeAnalysis.ai_score !== null ? (

@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       jobUrl,
       context,
       model = "gemini-2.5-flash",
+      geminiApiKey,
     } = (await req.json()) as {
       cvId?: string;
       title?: string;
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
       jobUrl?: string;
       context?: AIContext;
       model?: string;
+      geminiApiKey?: string;
     };
 
     const trimmedTitle = title?.trim();
@@ -69,6 +71,15 @@ export async function POST(req: NextRequest) {
     if (mode === "job_match" && !jobDescription?.trim()) {
       return NextResponse.json(
         { error: "Job description is required for job match mode" },
+        { status: 400 }
+      );
+    }
+    if (!geminiApiKey?.trim()) {
+      return NextResponse.json(
+        {
+          error:
+            "Configura tu API key de Gemini en Configuración antes de lanzar el análisis.",
+        },
         { status: 400 }
       );
     }
@@ -87,6 +98,7 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await scoreCVWithAI({
+      apiKey: geminiApiKey.trim(),
       mode,
       text,
       model,

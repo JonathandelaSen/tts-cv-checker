@@ -38,6 +38,9 @@ interface ExtractionViewProps {
     job_url?: string | null;
   };
   onAIAnalysisComplete: () => void;
+  geminiApiKey: string;
+  hasGeminiApiKey: boolean;
+  onOpenSettings: () => void;
 }
 
 type ParserTab = "python" | "pdfjs" | "node";
@@ -71,6 +74,9 @@ const PARSERS: {
 export default function ExtractionView({
   analysis,
   onAIAnalysisComplete,
+  geminiApiKey,
+  hasGeminiApiKey,
+  onOpenSettings,
 }: ExtractionViewProps) {
   const [activeTab, setActiveTab] = useState<ParserTab>("python");
   const [fullscreen, setFullscreen] = useState(false);
@@ -123,6 +129,11 @@ export default function ExtractionView({
   };
 
   const handleGeneralAnalysis = async (context: AIContext, model: string) => {
+    if (!hasGeminiApiKey) {
+      setAiError("Configura tu API key de Gemini antes de lanzar el análisis.");
+      return;
+    }
+
     setLoadingAI(true);
     setAiError(null);
 
@@ -135,6 +146,7 @@ export default function ExtractionView({
           mode: "general",
           context,
           model,
+          geminiApiKey,
         }),
       });
 
@@ -155,6 +167,11 @@ export default function ExtractionView({
     jobDescription: string,
     model: string
   ) => {
+    if (!hasGeminiApiKey) {
+      setAiError("Configura tu API key de Gemini antes de lanzar el análisis.");
+      return;
+    }
+
     setLoadingAI(true);
     setAiError(null);
 
@@ -167,6 +184,7 @@ export default function ExtractionView({
           mode: "job_match",
           jobDescription,
           model,
+          geminiApiKey,
         }),
       });
 
@@ -417,6 +435,8 @@ export default function ExtractionView({
                 onBack={() => setSelectedMode(null)}
                 loading={loadingAI}
                 error={aiError}
+                hasGeminiApiKey={hasGeminiApiKey}
+                onOpenSettings={onOpenSettings}
               />
             ) : (
               <JobMatchForm
@@ -425,6 +445,8 @@ export default function ExtractionView({
                 onBack={() => setSelectedMode(null)}
                 loading={loadingAI}
                 error={aiError}
+                hasGeminiApiKey={hasGeminiApiKey}
+                onOpenSettings={onOpenSettings}
               />
             )}
           </AnimatePresence>

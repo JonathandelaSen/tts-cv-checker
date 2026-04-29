@@ -16,6 +16,7 @@ import {
   FileSearch,
   Briefcase,
   FolderOpen,
+  Settings,
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import type { AnalysisMode } from "@/lib/db";
@@ -36,10 +37,11 @@ interface SidebarProps {
   analyses: AnalysisSummary[];
   cvCount: number;
   activeId: string | null;
-  activeView: "new" | "analysis" | "cvs";
+  activeView: "new" | "analysis" | "cvs" | "settings";
   onSelect: (id: string) => void;
   onNewAnalysis: () => void;
   onOpenCVs: () => void;
+  onOpenSettings: () => void;
   onDelete: (id: string) => void;
   onClearAll: () => void;
   userEmail: string | null;
@@ -53,6 +55,7 @@ export default function Sidebar({
   onSelect,
   onNewAnalysis,
   onOpenCVs,
+  onOpenSettings,
   onDelete,
   onClearAll,
   userEmail,
@@ -145,6 +148,18 @@ export default function Sidebar({
         >
           <FolderOpen className="w-4 h-4 shrink-0" />
           {!collapsed && <span>Mis CVs</span>}
+        </button>
+        <button
+          onClick={onOpenSettings}
+          className={`
+            w-full flex items-center gap-2 rounded-lg font-medium transition-all duration-150
+            ${activeView === "settings" ? "bg-white/[0.08] text-zinc-100" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}
+            ${collapsed ? "justify-center p-2" : "px-3 py-2.5 text-sm"}
+          `}
+          title="Configuración"
+        >
+          <Settings className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>Configuración</span>}
         </button>
       </div>
 

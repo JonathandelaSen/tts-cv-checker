@@ -10,6 +10,7 @@ import {
   Cpu,
   ChevronRight,
   MessageSquare,
+  KeyRound,
 } from "lucide-react";
 import type { AIContext } from "@/lib/db";
 
@@ -18,6 +19,8 @@ interface GeneralAnalysisFormProps {
   onBack: () => void;
   loading: boolean;
   error: string | null;
+  hasGeminiApiKey: boolean;
+  onOpenSettings: () => void;
 }
 
 export default function GeneralAnalysisForm({
@@ -25,6 +28,8 @@ export default function GeneralAnalysisForm({
   onBack,
   loading,
   error,
+  hasGeminiApiKey,
+  onOpenSettings,
 }: GeneralAnalysisFormProps) {
   const [additionalContext, setAdditionalContext] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
@@ -112,7 +117,7 @@ export default function GeneralAnalysisForm({
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={loading}
+          disabled={loading || !hasGeminiApiKey}
           className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-xl shadow-violet-900/30 transition-all active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed h-fit shrink-0"
         >
           {loading ? (
@@ -129,6 +134,27 @@ export default function GeneralAnalysisForm({
           )}
         </button>
       </div>
+
+      {!hasGeminiApiKey && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-3 flex flex-col gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>
+            Configura tu API key de Gemini para activar el análisis. La clave se
+            guarda solo en este navegador.
+          </span>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-xs font-semibold text-zinc-950 transition-colors hover:bg-amber-300"
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+            Configurar
+          </button>
+        </motion.div>
+      )}
 
       {error && (
         <motion.div
