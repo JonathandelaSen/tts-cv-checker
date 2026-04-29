@@ -3,6 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/auth"];
 
+function isPossibleServerAction(request: NextRequest) {
+  const contentType = request.headers.get("content-type");
+
+  return (
+    request.method === "POST" &&
+    (request.headers.has("next-action") ||
+      contentType === "application/x-www-form-urlencoded" ||
+      Boolean(contentType?.startsWith("multipart/form-data")))
+  );
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -40,6 +51,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   const hasAuthCode = request.nextUrl.searchParams.has("code");
+  const isServerAction = isPossibleServerAction(request);
 
   if (hasAuthCode && (pathname === "/" || pathname === "/login")) {
     const url = request.nextUrl.clone();
@@ -51,6 +63,10 @@ export async function updateSession(request: NextRequest) {
     }
 
     return NextResponse.redirect(url);
+  }
+
+  if (isServerAction) {
+    return supabaseResponse;
   }
 
   if (!user && !isPublicPath) {

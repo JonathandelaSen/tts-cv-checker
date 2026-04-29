@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop"
+    "supabase:stop": "supabase stop",
+    "supabase:sync-email-template": "node scripts/sync-supabase-email-template.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
