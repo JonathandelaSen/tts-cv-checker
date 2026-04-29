@@ -87,6 +87,11 @@ export interface AnalysisSummary {
   job_url: string | null;
 }
 
+export type DeleteCVResult =
+  | { status: "deleted" }
+  | { status: "in_use"; analyses: AnalysisSummary[] }
+  | { status: "not_found" };
+
 function stringifyJson(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   return typeof value === "string" ? value : JSON.stringify(value);
@@ -196,28 +201,31 @@ export async function updateCVName(
   return (data as CVRecord | null) ?? null;
 }
 
-export async function countAnalysesForCV(
+export async function listAnalysesForCV(
   supabase: SupabaseClient,
   cvId: string
-): Promise<number> {
-  const { count, error } = await supabase
+): Promise<AnalysisSummary[]> {
+  const { data, error } = await supabase
     .from("analyses")
-    .select("id", { count: "exact", head: true })
-    .eq("cv_id", cvId);
+    .select(
+      "id, cv_id, title, filename, created_at, analysis_mode, ai_score, ai_analyzed_at, job_url"
+    )
+    .eq("cv_id", cvId)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return count ?? 0;
+  return (data ?? []) as AnalysisSummary[];
 }
 
 export async function deleteCV(
   supabase: SupabaseClient,
   id: string
-): Promise<"deleted" | "in_use" | "not_found"> {
+): Promise<DeleteCVResult> {
   const cv = await getCV(supabase, id);
-  if (!cv) return "not_found";
+  if (!cv) return { status: "not_found" };
 
-  const analysesCount = await countAnalysesForCV(supabase, id);
-  if (analysesCount > 0) return "in_use";
+  const analyses = await listAnalysesForCV(supabase, id);
+  if (analyses.length > 0) return { status: "in_use", analyses };
 
   if (cv.pdf_storage_path) {
     const { error: storageError } = await supabase.storage
@@ -229,7 +237,7 @@ export async function deleteCV(
 
   const { error } = await supabase.from("cvs").delete().eq("id", id);
   if (error) throw error;
-  return "deleted";
+  return { status: "deleted" };
 }
 
 // ---------------------------------------------------------------------------

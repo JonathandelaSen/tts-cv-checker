@@ -17,6 +17,11 @@ type AppView = "new" | "analysis" | "cvs";
 interface FullAnalysis {
   id: string;
   cv_id: string | null;
+  cv: {
+    id: string;
+    name: string;
+    filename: string;
+  } | null;
   title: string;
   filename: string;
   file_size: number | null;
@@ -111,10 +116,35 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const analysisId = params.get("analysis");
+    const view = params.get("view");
+
+    if (analysisId) {
+      queueMicrotask(() => {
+        setActiveAnalysisId(analysisId);
+        setActiveView("analysis");
+        void fetchAnalysisDetail(analysisId);
+      });
+    } else if (view === "cvs") {
+      queueMicrotask(() => {
+        setActiveView("cvs");
+        setActiveAnalysisId(null);
+        setActiveAnalysis(null);
+      });
+    }
+  }, [fetchAnalysisDetail]);
+
   // Handle selecting an analysis
   const handleSelect = (id: string) => {
     setActiveAnalysisId(id);
     setActiveView("analysis");
+    window.history.replaceState(
+      null,
+      "",
+      `/?analysis=${encodeURIComponent(id)}`
+    );
     fetchAnalysisDetail(id);
   };
 
@@ -123,12 +153,14 @@ export default function Home() {
     setActiveView("new");
     setActiveAnalysisId(null);
     setActiveAnalysis(null);
+    window.history.replaceState(null, "", "/");
   };
 
   const handleOpenCVs = () => {
     setActiveView("cvs");
     setActiveAnalysisId(null);
     setActiveAnalysis(null);
+    window.history.replaceState(null, "", "/?view=cvs");
     fetchCVs();
   };
 
@@ -136,6 +168,11 @@ export default function Home() {
   const handleAnalysisCreated = (id: string) => {
     setActiveAnalysisId(id);
     setActiveView("analysis");
+    window.history.replaceState(
+      null,
+      "",
+      `/?analysis=${encodeURIComponent(id)}`
+    );
     fetchAnalysisDetail(id);
     fetchAnalyses();
     fetchCVs();
@@ -159,6 +196,7 @@ export default function Home() {
           setActiveAnalysisId(null);
           setActiveAnalysis(null);
           setActiveView("new");
+          window.history.replaceState(null, "", "/");
         }
       }
     } catch {
@@ -175,6 +213,7 @@ export default function Home() {
         setActiveAnalysisId(null);
         setActiveAnalysis(null);
         setActiveView("new");
+        window.history.replaceState(null, "", "/");
       }
     } catch {
       // silent
@@ -228,7 +267,12 @@ export default function Home() {
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col overflow-hidden"
             >
-              <CVLibrary cvs={cvs} onRefresh={fetchCVs} />
+              <CVLibrary
+                cvs={cvs}
+                analyses={analyses}
+                onRefresh={fetchCVs}
+                onOpenAnalysis={handleSelect}
+              />
             </motion.div>
           ) : loadingDetail ? (
             <motion.div
@@ -328,6 +372,8 @@ export default function Home() {
                         matching_keywords: activeAnalysis.matching_keywords,
                         missing_keywords: activeAnalysis.missing_keywords,
                         id: activeAnalysis.id,
+                        cv_id: activeAnalysis.cv_id,
+                        cv: activeAnalysis.cv,
                         title: activeAnalysis.title,
                         filename: activeAnalysis.filename,
                       }}

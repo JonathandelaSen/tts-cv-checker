@@ -10,6 +10,7 @@ import {
   Briefcase,
   FileDown,
   FileSearch,
+  FileText,
   ExternalLink,
   ListChecks,
   XCircle,
@@ -34,6 +35,12 @@ interface AIAnalysisViewProps {
     matching_keywords: string | null;
     missing_keywords: string | null;
     id: string;
+    cv_id: string | null;
+    cv: {
+      id: string;
+      name: string;
+      filename: string;
+    } | null;
     title: string;
     filename: string;
   };
@@ -95,11 +102,17 @@ export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
   };
 
   const handleExport = () => {
+    const cvName = analysis.cv?.name ?? analysis.filename;
+    const cvUrl = analysis.cv
+      ? `${window.location.origin}/api/cvs/${analysis.cv.id}/pdf`
+      : null;
     const report = `
 INFORME DE ANÁLISIS ATS
 -----------------------
 Archivo: ${analysis.filename}
 Nombre: ${analysis.title}
+CV utilizado: ${cvName}
+${cvUrl ? `Link CV: ${cvUrl}` : ""}
 ID de Análisis: ${analysis.id}
 Fecha: ${formatDate(analysis.ai_analyzed_at)}
 Modelo: ${analysis.ai_model}
@@ -260,6 +273,43 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
             </div>
           </div>
         </div>
+
+        {(analysis.cv || analysis.cv_id) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="flex flex-col gap-3 rounded-2xl border border-sky-500/10 bg-sky-500/[0.03] p-5 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-500/20 bg-sky-500/10 text-sky-300">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  CV utilizado
+                </p>
+                <p className="truncate text-sm font-semibold text-zinc-100">
+                  {analysis.cv?.name ?? analysis.filename}
+                </p>
+                {analysis.cv?.filename && (
+                  <p className="truncate text-xs text-zinc-500">
+                    {analysis.cv.filename}
+                  </p>
+                )}
+              </div>
+            </div>
+            <a
+              href={`/api/cvs/${analysis.cv?.id ?? analysis.cv_id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-500/20"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Abrir CV
+            </a>
+          </motion.div>
+        )}
 
         {/* Context: General analysis questionnaire */}
         {analysis.analysis_mode === "general" && analysis.ai_context?.additionalContext && (

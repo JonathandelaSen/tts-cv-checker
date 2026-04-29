@@ -74,12 +74,15 @@ export async function DELETE(
 
     const { id } = await params;
     const result = await deleteCV(supabase, id);
-    if (result === "not_found") {
+    if (result.status === "not_found") {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
-    if (result === "in_use") {
+    if (result.status === "in_use") {
       return NextResponse.json(
-        { error: "No puedes borrar un CV con análisis asociados." },
+        {
+          error: "No puedes borrar un CV con análisis asociados.",
+          analyses: result.analyses,
+        },
         { status: 409 }
       );
     }

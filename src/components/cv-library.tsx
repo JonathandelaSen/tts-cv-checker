@@ -2,26 +2,72 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Eye, FileText, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
+import {
+  Briefcase,
+  Clock,
+  Download,
+  ExternalLink,
+  Eye,
+  FileSearch,
+  FileText,
+  Loader2,
+  Pencil,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
-import type { CVSummary } from "@/lib/db";
+import type { AnalysisSummary, CVSummary } from "@/lib/db";
 
 interface CVLibraryProps {
   cvs: CVSummary[];
+  analyses: AnalysisSummary[];
   onRefresh: () => void;
+  onOpenAnalysis: (id: string) => void;
 }
 
-export default function CVLibrary({ cvs, onRefresh }: CVLibraryProps) {
+export default function CVLibrary({
+  cvs,
+  analyses,
+  onRefresh,
+  onOpenAnalysis,
+}: CVLibraryProps) {
   const [selectedId, setSelectedId] = useState(cvs[0]?.id ?? "");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blockingAnalyses, setBlockingAnalyses] = useState<AnalysisSummary[]>(
+    []
+  );
 
   const selected = useMemo(
     () => cvs.find((cv) => cv.id === selectedId) ?? cvs[0] ?? null,
     [cvs, selectedId]
   );
+
+  const analysesByCv = useMemo(() => {
+    const grouped = new Map<string, AnalysisSummary[]>();
+    for (const analysis of analyses) {
+      if (!analysis.cv_id) continue;
+      const existing = grouped.get(analysis.cv_id) ?? [];
+      existing.push(analysis);
+      grouped.set(analysis.cv_id, existing);
+    }
+    return grouped;
+  }, [analyses]);
+
+  const selectedAnalyses = useMemo(
+    () => (selected ? (analysesByCv.get(selected.id) ?? []) : []),
+    [analysesByCv, selected]
+  );
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
   const startEditing = (id: string, name: string) => {
     setEditingId(id);
@@ -33,6 +79,7 @@ export default function CVLibrary({ cvs, onRefresh }: CVLibraryProps) {
     if (!draftName.trim()) return;
     setLoadingId(id);
     setError(null);
+    setBlockingAnalyses([]);
     try {
       const res = await fetch(`/api/cvs/${id}`, {
         method: "PATCH",
@@ -54,10 +101,16 @@ export default function CVLibrary({ cvs, onRefresh }: CVLibraryProps) {
     if (!confirm("¿Seguro que quieres borrar este CV?")) return;
     setLoadingId(id);
     setError(null);
+    setBlockingAnalyses([]);
     try {
       const res = await fetch(`/api/cvs/${id}`, { method: "DELETE" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "No se pudo borrar el CV");
+      if (!res.ok) {
+        if (res.status === 409 && Array.isArray(data.analyses)) {
+          setBlockingAnalyses(data.analyses);
+        }
+        throw new Error(data.error || "No se pudo borrar el CV");
+      }
       if (selectedId === id) setSelectedId("");
       onRefresh();
     } catch (err: unknown) {
@@ -91,7 +144,32 @@ export default function CVLibrary({ cvs, onRefresh }: CVLibraryProps) {
 
           {error && (
             <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-              {error}
+              <p>{error}</p>
+              {blockingAnalyses.length > 0 && (
+                <div className="mt-3 space-y-2 border-t border-rose-500/20 pt-3">
+                  <p className="text-xs font-semibold text-rose-200">
+                    Análisis asociados
+                  </p>
+                  {blockingAnalyses.map((analysis) => (
+                    <a
+                      key={analysis.id}
+                      href={`/?analysis=${encodeURIComponent(analysis.id)}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        onOpenAnalysis(analysis.id);
+                      }}
+                      className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#0a0a12]/70 px-3 py-2 text-left text-xs text-zinc-300 transition-colors hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-100"
+                    >
+                      <FileSearch className="h-3.5 w-3.5 shrink-0 text-rose-300" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {analysis.title ||
+                          analysis.filename.replace(/\.pdf$/i, "")}
+                      </span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -138,6 +216,12 @@ export default function CVLibrary({ cvs, onRefresh }: CVLibraryProps) {
                       <p className="mt-1 truncate text-xs text-zinc-500">
                         {cv.filename}
                       </p>
+                      {Boolean(analysesByCv.get(cv.id)?.length) && (
+                        <p className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-500/15 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
+                          <FileSearch className="h-3 w-3" />
+                          {analysesByCv.get(cv.id)?.length} análisis
+                        </p>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       {editingId === cv.id ? (
@@ -210,6 +294,55 @@ export default function CVLibrary({ cvs, onRefresh }: CVLibraryProps) {
                 >
                   <Download className="h-4 w-4" />
                 </a>
+              </div>
+              <div className="border-b border-white/[0.06] px-4 py-3">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300">
+                    <FileSearch className="h-3.5 w-3.5 text-sky-300" />
+                    Análisis asociados
+                  </p>
+                  <span className="rounded-md bg-zinc-800/70 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                    {selectedAnalyses.length}
+                  </span>
+                </div>
+                {selectedAnalyses.length > 0 ? (
+                  <div className="grid max-h-40 gap-2 overflow-y-auto pr-1 md:grid-cols-2">
+                    {selectedAnalyses.map((analysis) => (
+                      <a
+                        key={analysis.id}
+                        href={`/?analysis=${encodeURIComponent(analysis.id)}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          onOpenAnalysis(analysis.id);
+                        }}
+                        className="group flex min-w-0 items-center gap-2 rounded-lg border border-white/[0.05] bg-[#0a0a12] px-3 py-2 text-left transition-colors hover:border-sky-500/25 hover:bg-sky-500/10"
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/70 text-zinc-500 group-hover:text-sky-300">
+                          {analysis.analysis_mode === "job_match" ? (
+                            <Briefcase className="h-3.5 w-3.5" />
+                          ) : (
+                            <FileSearch className="h-3.5 w-3.5" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold text-zinc-200">
+                            {analysis.title ||
+                              analysis.filename.replace(/\.pdf$/i, "")}
+                          </span>
+                          <span className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-600">
+                            <Clock className="h-3 w-3" />
+                            {formatDate(analysis.created_at)}
+                          </span>
+                        </span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-zinc-600 group-hover:text-sky-300" />
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-white/[0.04] bg-[#0a0a12]/70 px-3 py-2 text-xs text-zinc-600">
+                    Este CV todavía no tiene análisis asociados.
+                  </p>
+                )}
               </div>
               <iframe
                 src={`/api/cvs/${selected.id}/pdf#toolbar=0`}
