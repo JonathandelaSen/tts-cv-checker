@@ -31,8 +31,11 @@ interface ExtractionData {
 interface ExtractionViewProps {
   analysis: ExtractionData & {
     id: string;
+    cv_id?: string | null;
+    title?: string;
     filename: string;
     ai_score: number | null;
+    job_url?: string | null;
   };
   onAIAnalysisComplete: () => void;
 }
@@ -103,6 +106,9 @@ export default function ExtractionView({
 
   const currentText = getTextForTab(activeTab);
   const currentError = getErrorForTab(activeTab);
+  const pdfUrl = analysis.cv_id
+    ? `/api/cvs/${analysis.cv_id}/pdf`
+    : `/api/analyses/${analysis.id}/pdf`;
 
   const wordCount = currentText
     ? currentText.split(/\s+/).filter(Boolean).length
@@ -209,7 +215,7 @@ export default function ExtractionView({
                 {showPdfPreview ? "Cerrar PDF" : "Ver PDF Original"}
               </button>
               <a
-                href={`/api/analyses/${analysis.id}/pdf`}
+                href={`${pdfUrl}?download=1`}
                 download={analysis.filename}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all mr-2"
                 title="Descargar PDF original"
@@ -379,7 +385,7 @@ export default function ExtractionView({
                   </button>
                 </div>
                 <iframe
-                  src={`/api/analyses/${analysis.id}/pdf#toolbar=0`}
+                  src={`${pdfUrl}#toolbar=0`}
                   className="w-full h-full border-none invert brightness-90 hue-rotate-180"
                   title="PDF Preview"
                 />

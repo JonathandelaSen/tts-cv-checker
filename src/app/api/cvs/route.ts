@@ -1,28 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CV_PDFS_BUCKET, createCV } from "@/lib/db";
+import { CV_PDFS_BUCKET, createCV, listCVs } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { extractPdfText } from "@/lib/pdf-extraction";
 import { createClient } from "@/lib/supabase/server";
 
+async function getAuthedSupabase() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { supabase, user };
+}
+
+export async function GET() {
+  try {
+    const { supabase, user } = await getAuthedSupabase();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const cvs = await listCVs(supabase);
+    return NextResponse.json(cvs);
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { supabase, user } = await getAuthedSupabase();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
     const requestedName = String(formData.get("name") ?? "").trim();
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Convert file to Buffer
+    if (file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "Solo se permiten archivos PDF." },
+        { status: 400 }
+      );
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const extracted = await extractPdfText(buffer);
@@ -49,24 +75,9 @@ export async function POST(req: NextRequest) {
       ...extracted,
     });
 
-    return NextResponse.json({
-      id: cv.id,
-      cvId: cv.id,
-      filename: cv.filename,
-      created_at: cv.created_at,
-      texts: {
-        python: cv.text_python,
-        pdfjs: cv.text_pdfjs,
-        node: cv.text_node,
-      },
-      errors: {
-        python: cv.extract_error_python,
-        pdfjs: cv.extract_error_pdfjs,
-        node: cv.extract_error_node,
-      },
-    });
+    return NextResponse.json(cv);
   } catch (error: unknown) {
-    console.error("API error:", error);
+    console.error("Create CV error:", error);
     return NextResponse.json(
       { error: "Internal server error", details: getErrorMessage(error) },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CV_PDFS_BUCKET, getAnalysis } from "@/lib/db";
+import { CV_PDFS_BUCKET, getCV } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,9 +17,9 @@ export async function GET(
     }
 
     const { id } = await params;
-    const analysis = await getAnalysis(supabase, id);
+    const cv = await getCV(supabase, id);
 
-    if (!analysis || !analysis.pdf_storage_path) {
+    if (!cv?.pdf_storage_path) {
       return NextResponse.json(
         { error: "PDF no encontrado" },
         { status: 404 }
@@ -28,7 +28,7 @@ export async function GET(
 
     const { data, error } = await supabase.storage
       .from(CV_PDFS_BUCKET)
-      .download(analysis.pdf_storage_path);
+      .download(cv.pdf_storage_path);
 
     if (error || !data) {
       return NextResponse.json(
@@ -44,13 +44,13 @@ export async function GET(
     return new NextResponse(data, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `${disposition}; filename="${encodeURIComponent(analysis.filename)}"`,
+        "Content-Disposition": `${disposition}; filename="${encodeURIComponent(cv.filename)}"`,
       },
     });
   } catch (error: unknown) {
-    console.error("Download PDF error:", error);
+    console.error("CV PDF error:", error);
     return NextResponse.json(
-      { error: "Error descargando el PDF", details: getErrorMessage(error) },
+      { error: "Error cargando el PDF", details: getErrorMessage(error) },
       { status: 500 }
     );
   }

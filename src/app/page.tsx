@@ -2,18 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Sidebar, { type AnalysisSummary } from "@/components/sidebar";
-import UploadPhase from "@/components/upload-phase";
+import NewAnalysisFlow from "@/components/new-analysis-flow";
+import CVLibrary from "@/components/cv-library";
 import ExtractionView from "@/components/extraction-view";
 import AIAnalysisView from "@/components/ai-analysis-view";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { AnalysisMode, AIContext } from "@/lib/db";
+import type { AnalysisMode, AIContext, CVSummary } from "@/lib/db";
 
 type ViewTab = "extraction" | "analysis";
+type AppView = "new" | "analysis" | "cvs";
 
 interface FullAnalysis {
   id: string;
+  cv_id: string | null;
+  title: string;
   filename: string;
   file_size: number | null;
   created_at: string;
@@ -27,22 +31,29 @@ interface FullAnalysis {
   analysis_mode: AnalysisMode;
   ai_model: string | null;
   job_description: string | null;
+  job_url: string | null;
   ai_context: AIContext | null;
   ai_score: number | null;
   ai_feedback: string | null;
   ai_keywords: string | null;
   ai_improvements: string | null;
+  job_key_data: string | null;
+  job_keywords: string | null;
+  cv_keywords: string | null;
+  matching_keywords: string | null;
+  missing_keywords: string | null;
   ai_analyzed_at: string | null;
 }
 
 export default function Home() {
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
+  const [cvs, setCVs] = useState<CVSummary[]>([]);
   const [activeAnalysisId, setActiveAnalysisId] = useState<string | null>(null);
   const [activeAnalysis, setActiveAnalysis] = useState<FullAnalysis | null>(
     null
   );
   const [viewTab, setViewTab] = useState<ViewTab>("extraction");
-  const [showUpload, setShowUpload] = useState(true);
+  const [activeView, setActiveView] = useState<AppView>("new");
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -59,9 +70,21 @@ export default function Home() {
     }
   }, []);
 
+  const fetchCVs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cvs");
+      if (res.ok) {
+        const data = await res.json();
+        setCVs(data);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
   useEffect(() => {
-    void Promise.resolve().then(fetchAnalyses);
-  }, [fetchAnalyses]);
+    void Promise.resolve().then(() => Promise.all([fetchAnalyses(), fetchCVs()]));
+  }, [fetchAnalyses, fetchCVs]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -79,6 +102,7 @@ export default function Home() {
         const data: FullAnalysis = await res.json();
         setActiveAnalysis(data);
         setViewTab(data.ai_score !== null ? "analysis" : "extraction");
+        setActiveView("analysis");
       }
     } catch {
       // silent
@@ -90,23 +114,31 @@ export default function Home() {
   // Handle selecting an analysis
   const handleSelect = (id: string) => {
     setActiveAnalysisId(id);
-    setShowUpload(false);
+    setActiveView("analysis");
     fetchAnalysisDetail(id);
   };
 
   // Handle new analysis
   const handleNewAnalysis = () => {
-    setShowUpload(true);
+    setActiveView("new");
     setActiveAnalysisId(null);
     setActiveAnalysis(null);
   };
 
-  // Handle upload complete
-  const handleUploadComplete = (id: string) => {
+  const handleOpenCVs = () => {
+    setActiveView("cvs");
+    setActiveAnalysisId(null);
+    setActiveAnalysis(null);
+    fetchCVs();
+  };
+
+  // Handle analysis creation complete
+  const handleAnalysisCreated = (id: string) => {
     setActiveAnalysisId(id);
-    setShowUpload(false);
+    setActiveView("analysis");
     fetchAnalysisDetail(id);
     fetchAnalyses();
+    fetchCVs();
   };
 
   // Handle AI analysis complete
@@ -126,7 +158,7 @@ export default function Home() {
         if (activeAnalysisId === id) {
           setActiveAnalysisId(null);
           setActiveAnalysis(null);
-          setShowUpload(true);
+          setActiveView("new");
         }
       }
     } catch {
@@ -142,7 +174,7 @@ export default function Home() {
         await fetchAnalyses();
         setActiveAnalysisId(null);
         setActiveAnalysis(null);
-        setShowUpload(true);
+        setActiveView("new");
       }
     } catch {
       // silent
@@ -160,9 +192,12 @@ export default function Home() {
       {/* Sidebar */}
       <Sidebar
         analyses={analyses}
+        cvCount={cvs.length}
         activeId={activeAnalysisId}
+        activeView={activeView}
         onSelect={handleSelect}
         onNewAnalysis={handleNewAnalysis}
+        onOpenCVs={handleOpenCVs}
         onDelete={handleDelete}
         onClearAll={handleClearAll}
         userEmail={userEmail}
@@ -171,15 +206,29 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <AnimatePresence mode="wait">
-          {showUpload ? (
+          {activeView === "new" ? (
             <motion.div
-              key="upload"
+              key="new-analysis"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col"
             >
-              <UploadPhase onUploadComplete={handleUploadComplete} />
+              <NewAnalysisFlow
+                cvs={cvs}
+                onCVCreated={fetchCVs}
+                onAnalysisCreated={handleAnalysisCreated}
+              />
+            </motion.div>
+          ) : activeView === "cvs" ? (
+            <motion.div
+              key="cv-library"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              <CVLibrary cvs={cvs} onRefresh={fetchCVs} />
             </motion.div>
           ) : loadingDetail ? (
             <motion.div
@@ -271,8 +320,15 @@ export default function Home() {
                         ai_analyzed_at: activeAnalysis.ai_analyzed_at!,
                         analysis_mode: activeAnalysis.analysis_mode,
                         job_description: activeAnalysis.job_description,
+                        job_url: activeAnalysis.job_url,
                         ai_context: activeAnalysis.ai_context,
+                        job_key_data: activeAnalysis.job_key_data,
+                        job_keywords: activeAnalysis.job_keywords,
+                        cv_keywords: activeAnalysis.cv_keywords,
+                        matching_keywords: activeAnalysis.matching_keywords,
+                        missing_keywords: activeAnalysis.missing_keywords,
                         id: activeAnalysis.id,
+                        title: activeAnalysis.title,
                         filename: activeAnalysis.filename,
                       }}
                     />
