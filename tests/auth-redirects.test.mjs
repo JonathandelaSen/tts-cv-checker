@@ -12,6 +12,11 @@ const proxySource = readFileSync(
   "utf8"
 );
 
+const proxyConfigSource = readFileSync(
+  new URL("../src/proxy.ts", import.meta.url),
+  "utf8"
+);
+
 const authFormSource = readFileSync(
   new URL("../src/components/auth-form.tsx", import.meta.url),
   "utf8"
@@ -59,6 +64,11 @@ test("proxy lets server action requests return Next.js action responses", () => 
   );
   assert.match(proxySource, /headers\.has\("next-action"\)/);
   assert.match(proxySource, /multipart\/form-data/);
+});
+
+test("proxy does not convert API auth errors into login HTML", () => {
+  assert.match(proxyConfigSource, /\(\?!api\|/);
+  assert.doesNotMatch(proxyConfigSource, /matcher:[\s\S]*\/api\/:path/);
 });
 
 test("password reset email is requested from the browser Supabase client", () => {
