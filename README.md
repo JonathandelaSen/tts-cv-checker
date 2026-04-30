@@ -12,7 +12,9 @@ npm run supabase:start
 cp .env.example .env.local
 ```
 
-Use the publishable key printed by `npm run supabase:start` in `.env.local`.
+Use the `Publishable` key printed by `npm run supabase:start` as
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the `Secret` key as
+`SUPABASE_SERVICE_ROLE_KEY`, in `.env.local`.
 This repo is configured to avoid the default Supabase local ports:
 
 - App API: `http://127.0.0.1:55431`

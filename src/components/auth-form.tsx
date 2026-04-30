@@ -4,12 +4,16 @@ import { FormEvent, useActionState, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Eye,
+  EyeOff,
   KeyRound,
   Loader2,
   LogIn,
+  MailCheck,
   UserPlus,
 } from "lucide-react";
 import {
+  resendConfirmationEmail,
   signIn,
   signUp,
   type AuthFormState,
@@ -37,13 +41,26 @@ export function AuthForm({ initialError, initialMessage }: AuthFormProps) {
     signUp,
     INITIAL_STATE
   );
+  const [resendState, resendAction, resendPending] = useActionState(
+    resendConfirmationEmail,
+    INITIAL_STATE
+  );
   const [recoverState, setRecoverState] = useState<AuthFormState>(INITIAL_STATE);
   const [recoverPending, setRecoverPending] = useState(false);
+  const [emailValue, setEmailValue] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const isSignup = mode === "signup";
   const isRecover = mode === "recover";
   const state = isRecover ? recoverState : isSignup ? signupState : loginState;
   const pending = isRecover ? recoverPending : isSignup ? signupPending : loginPending;
+  const visibleError = resendState.message
+    ? initialError
+    : resendState.error || state.error || initialError;
+  const visibleMessage = resendState.message || state.message || initialMessage;
+  const resendEmail = state.email || resendState.email || emailValue.trim();
+  const showResendConfirmation =
+    !isRecover && (state.canResendConfirmation || resendState.canResendConfirmation);
   const title = isRecover
     ? "Recuperar contraseña"
     : isSignup
@@ -137,6 +154,8 @@ export function AuthForm({ initialError, initialMessage }: AuthFormProps) {
             id="email"
             name="email"
             type="email"
+            value={emailValue}
+            onChange={(event) => setEmailValue(event.target.value)}
             autoComplete="email"
             placeholder="tu@email.com"
             required
@@ -149,33 +168,50 @@ export function AuthForm({ initialError, initialMessage }: AuthFormProps) {
             <Label htmlFor="password" className="text-zinc-300">
               Contraseña
             </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              placeholder="Mínimo 6 caracteres"
-              minLength={6}
-              required
-              className="h-11 bg-white/[0.04] border-white/[0.08]"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={isSignup ? "new-password" : "current-password"}
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                required
+                className="h-11 border-white/[0.08] bg-white/[0.04] pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute inset-y-0 right-2 flex w-9 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         )}
 
-        {(state.error || initialError) && (
+        {visibleError && (
           <Alert variant="destructive" className="border-rose-500/20 bg-rose-500/10">
             <AlertCircle className="w-4 h-4" />
             <AlertDescription className="text-rose-200">
-              {state.error || initialError}
+              {visibleError}
             </AlertDescription>
           </Alert>
         )}
 
-        {(state.message || initialMessage) && (
+        {visibleMessage && (
           <Alert className="border-emerald-500/20 bg-emerald-500/10">
             <CheckCircle2 className="w-4 h-4 text-emerald-300" />
             <AlertDescription className="text-emerald-200">
-              {state.message || initialMessage}
+              {visibleMessage}
             </AlertDescription>
           </Alert>
         )}
@@ -197,6 +233,25 @@ export function AuthForm({ initialError, initialMessage }: AuthFormProps) {
           {isRecover ? "Enviar enlace" : isSignup ? "Crear cuenta" : "Entrar"}
         </Button>
       </form>
+
+      {showResendConfirmation && (
+        <form action={resendAction} className="mt-4">
+          <input type="hidden" name="email" value={resendEmail} />
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={resendPending || !resendEmail}
+            className="h-10 w-full border-amber-400/20 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
+          >
+            {resendPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <MailCheck />
+            )}
+            Reenviar email de confirmación
+          </Button>
+        </form>
+      )}
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
         {isRecover ? (

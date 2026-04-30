@@ -3,11 +3,14 @@
 import { CV_PDFS_BUCKET } from "@/lib/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type AuthFormState = {
   error?: string;
   message?: string;
+  email?: string;
+  canResendConfirmation?: boolean;
 };
 
 function getCredentials(formData: FormData) {
@@ -44,6 +47,23 @@ function getPasswordChange(formData: FormData) {
   return { password };
 }
 
+async function getEmailRedirectTo(next = "/") {
+  const headersList = await headers();
+  const origin =
+    headersList.get("origin") ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "http://127.0.0.1:3000";
+
+  return `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
+}
+
+function isEmailNotConfirmedError(error: { code?: string; message?: string }) {
+  return (
+    error.code === "email_not_confirmed" ||
+    Boolean(error.message?.toLowerCase().includes("email not confirmed"))
+  );
+}
+
 export async function signIn(
   _state: AuthFormState,
   formData: FormData
@@ -55,6 +75,14 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword(credentials);
 
   if (error) {
+    if (isEmailNotConfirmedError(error)) {
+      return {
+        error: "Confirma tu email antes de entrar.",
+        email: credentials.email,
+        canResendConfirmation: true,
+      };
+    }
+
     return { error: "No he podido iniciar sesión con esas credenciales." };
   }
 
@@ -69,13 +97,48 @@ export async function signUp(
   if ("error" in credentials) return { error: credentials.error };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp(credentials);
+  const { error } = await supabase.auth.signUp({
+    ...credentials,
+    options: {
+      emailRedirectTo: await getEmailRedirectTo("/"),
+    },
+  });
 
   if (error) {
     return { error: "No he podido crear la cuenta. Prueba con otro email." };
   }
 
-  redirect("/");
+  return {
+    message: "Te hemos enviado un email para confirmar tu cuenta antes de entrar.",
+    email: credentials.email,
+    canResendConfirmation: true,
+  };
+}
+
+export async function resendConfirmationEmail(
+  _state: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") || "").trim();
+
+  if (!email) {
+    return { error: "Introduce tu email para reenviar la confirmación." };
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: await getEmailRedirectTo("/"),
+    },
+  });
+
+  return {
+    message: "Si hay una cuenta pendiente para ese email, recibirás otro enlace.",
+    email,
+    canResendConfirmation: true,
+  };
 }
 
 export async function updatePasswordFromRecovery(
