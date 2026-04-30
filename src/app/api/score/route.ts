@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const analysis = await getAnalysis(supabase, analysisId);
+    const analysis = await getAnalysis(supabase, analysisId, user.id);
     if (!analysis) {
       return NextResponse.json(
         { error: "Analysis not found" },
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       jobUrl: mode === "job_match" ? jobUrl : null,
     });
 
-    const updated = await updateAnalysisWithAI(supabase, analysisId, {
+    const updated = await updateAnalysisWithAI(supabase, analysisId, user.id, {
       analysis_mode: mode,
       ai_model: model,
       job_description: mode === "job_match" ? jobDescription?.trim() ?? null : null,

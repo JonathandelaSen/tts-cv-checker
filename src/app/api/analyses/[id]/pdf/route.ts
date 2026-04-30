@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const analysis = await getAnalysis(supabase, id);
+    const analysis = await getAnalysis(supabase, id, user.id);
 
     if (!analysis || !analysis.pdf_storage_path) {
       return NextResponse.json(

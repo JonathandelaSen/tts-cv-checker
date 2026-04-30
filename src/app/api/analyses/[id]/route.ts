@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const analysis = await getAnalysis(supabase, id);
+    const analysis = await getAnalysis(supabase, id, user.id);
     if (!analysis) {
       return NextResponse.json(
         { error: "Analysis not found" },
@@ -48,7 +48,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const deleted = await deleteAnalysis(supabase, id);
+    const deleted = await deleteAnalysis(supabase, id, user.id);
     if (!deleted) {
       return NextResponse.json(
         { error: "Analysis not found" },

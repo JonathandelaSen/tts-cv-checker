@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const cv = await getCV(supabase, id);
+    const cv = await getCV(supabase, id, user.id);
 
     if (!cv?.pdf_storage_path) {
       return NextResponse.json(

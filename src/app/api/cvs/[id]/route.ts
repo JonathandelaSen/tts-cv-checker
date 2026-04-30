@@ -23,7 +23,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const cv = await getCV(supabase, id);
+    const cv = await getCV(supabase, id, user.id);
     if (!cv) {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
@@ -51,7 +51,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    const cv = await updateCVName(supabase, id, trimmedName);
+    const cv = await updateCVName(supabase, id, user.id, trimmedName);
     if (!cv) {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
@@ -73,7 +73,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const result = await deleteCV(supabase, id);
+    const result = await deleteCV(supabase, id, user.id);
     if (result.status === "not_found") {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }

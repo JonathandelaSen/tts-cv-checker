@@ -160,11 +160,13 @@ export async function createCV(
 }
 
 export async function listCVs(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  userId: string
 ): Promise<CVSummary[]> {
   const { data, error } = await supabase
     .from("cvs")
     .select("id, name, filename, file_size, created_at, updated_at")
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -173,12 +175,14 @@ export async function listCVs(
 
 export async function getCV(
   supabase: SupabaseClient,
-  id: string
+  id: string,
+  userId: string
 ): Promise<CVRecord | null> {
   const { data, error } = await supabase
     .from("cvs")
     .select("*")
     .eq("id", id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) throw error;
@@ -188,12 +192,14 @@ export async function getCV(
 export async function updateCVName(
   supabase: SupabaseClient,
   id: string,
+  userId: string,
   name: string
 ): Promise<CVRecord | null> {
   const { data, error } = await supabase
     .from("cvs")
     .update({ name })
     .eq("id", id)
+    .eq("user_id", userId)
     .select("*")
     .maybeSingle();
 
@@ -203,7 +209,8 @@ export async function updateCVName(
 
 export async function listAnalysesForCV(
   supabase: SupabaseClient,
-  cvId: string
+  cvId: string,
+  userId: string
 ): Promise<AnalysisSummary[]> {
   const { data, error } = await supabase
     .from("analyses")
@@ -211,6 +218,7 @@ export async function listAnalysesForCV(
       "id, cv_id, title, filename, created_at, analysis_mode, ai_score, ai_analyzed_at, job_url"
     )
     .eq("cv_id", cvId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -219,12 +227,13 @@ export async function listAnalysesForCV(
 
 export async function deleteCV(
   supabase: SupabaseClient,
-  id: string
+  id: string,
+  userId: string
 ): Promise<DeleteCVResult> {
-  const cv = await getCV(supabase, id);
+  const cv = await getCV(supabase, id, userId);
   if (!cv) return { status: "not_found" };
 
-  const analyses = await listAnalysesForCV(supabase, id);
+  const analyses = await listAnalysesForCV(supabase, id, userId);
   if (analyses.length > 0) return { status: "in_use", analyses };
 
   if (cv.pdf_storage_path) {
@@ -316,6 +325,7 @@ export interface UpdateAIInput {
 export async function updateAnalysisWithAI(
   supabase: SupabaseClient,
   id: string,
+  userId: string,
   data: UpdateAIInput
 ): Promise<Analysis | null> {
   const { data: analysis, error } = await supabase
@@ -338,6 +348,7 @@ export async function updateAnalysisWithAI(
       ai_analyzed_at: new Date().toISOString(),
     })
     .eq("id", id)
+    .eq("user_id", userId)
     .select("*")
     .maybeSingle();
 
@@ -347,12 +358,14 @@ export async function updateAnalysisWithAI(
 
 export async function getAnalysis(
   supabase: SupabaseClient,
-  id: string
+  id: string,
+  userId: string
 ): Promise<Analysis | null> {
   const { data: analysis, error } = await supabase
     .from("analyses")
     .select("*, cv:cvs(*)")
     .eq("id", id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) throw error;
@@ -360,13 +373,15 @@ export async function getAnalysis(
 }
 
 export async function listAnalyses(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  userId: string
 ): Promise<AnalysisSummary[]> {
   const { data, error } = await supabase
     .from("analyses")
     .select(
       "id, cv_id, title, filename, created_at, analysis_mode, ai_score, ai_analyzed_at, job_url"
     )
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -375,12 +390,17 @@ export async function listAnalyses(
 
 export async function deleteAnalysis(
   supabase: SupabaseClient,
-  id: string
+  id: string,
+  userId: string
 ): Promise<boolean> {
-  const analysis = await getAnalysis(supabase, id);
+  const analysis = await getAnalysis(supabase, id, userId);
   if (!analysis) return false;
 
-  const { error } = await supabase.from("analyses").delete().eq("id", id);
+  const { error } = await supabase
+    .from("analyses")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
   if (error) throw error;
 
   return true;

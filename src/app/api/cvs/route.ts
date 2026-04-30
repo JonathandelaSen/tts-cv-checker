@@ -20,7 +20,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const cvs = await listCVs(supabase);
+    const cvs = await listCVs(supabase, user.id);
     return NextResponse.json(cvs);
   } catch (error: unknown) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });

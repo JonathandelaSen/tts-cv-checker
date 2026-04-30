@@ -27,7 +27,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const analyses = await listAnalyses(supabase);
+    const analyses = await listAnalyses(supabase, user.id);
     return NextResponse.json(analyses);
   } catch (error: unknown) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cv = await getCV(supabase, cvId);
+    const cv = await getCV(supabase, cvId, user.id);
     if (!cv) {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
@@ -154,9 +154,9 @@ export async function DELETE() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const analyses = await listAnalyses(supabase);
+    const analyses = await listAnalyses(supabase, user.id);
     for (const a of analyses) {
-      await deleteAnalysis(supabase, a.id);
+      await deleteAnalysis(supabase, a.id, user.id);
     }
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
