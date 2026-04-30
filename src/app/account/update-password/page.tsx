@@ -24,7 +24,7 @@ export default async function UpdatePasswordPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
               <FileText className="h-4 w-4 text-white" />
             </div>
-            <span className="text-sm font-semibold">CV Checker</span>
+            <span className="text-sm font-semibold">TTS CV AI Checker</span>
           </div>
 
           <UpdatePasswordForm />

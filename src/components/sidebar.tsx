@@ -100,7 +100,7 @@ export default function Sidebar({
                 <FileText className="w-3.5 h-3.5 text-white" />
               </div>
               <span className="font-semibold text-sm text-zinc-100 truncate">
-                CV Checker
+                TTS CV AI Checker
               </span>
             </motion.div>
           )}

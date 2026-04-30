@@ -32,7 +32,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
               <FileText className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold text-sm">CV Checker</span>
+            <span className="font-semibold text-sm">TTS CV AI Checker</span>
           </div>
 
           <div className="mb-6 text-center">
