@@ -6,7 +6,7 @@ export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceRoleKey) {
-    throw new Error("Borrado de cuenta no configurado");
+    throw new Error("Cliente administrativo de Supabase no configurado");
   }
 
   return createClient(

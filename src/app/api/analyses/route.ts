@@ -9,6 +9,12 @@ import {
 } from "@/lib/db";
 import { scoreCVWithAI } from "@/lib/ai-scoring";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  createRequestId,
+  getErrorCode,
+  recordProcessingEvent,
+  sanitizeErrorMessage,
+} from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 
 async function getAuthedSupabase() {
@@ -35,11 +41,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId("analysis");
+  let userId: string | null = null;
+  let cvIdForEvents: string | null = null;
+  let analysisIdForEvents: string | null = null;
   try {
     const { supabase, user } = await getAuthedSupabase();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    userId = user.id;
 
     const {
       cvId,
@@ -65,6 +76,7 @@ export async function POST(req: NextRequest) {
     if (!cvId) {
       return NextResponse.json({ error: "cvId is required" }, { status: 400 });
     }
+    cvIdForEvents = cvId;
     if (!trimmedTitle) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -91,12 +103,33 @@ export async function POST(req: NextRequest) {
 
     const text = cv.text_python || cv.text_pdfjs || cv.text_node;
     if (!text) {
+      await recordProcessingEvent({
+        userId,
+        cvId,
+        requestId,
+        stage: "analysis_preflight",
+        status: "error",
+        source: "api_analyses",
+        fileSize: cv.file_size,
+        errorCode: "no_extracted_text_available",
+        errorMessage: "No extracted text available for this CV.",
+        metadata: {
+          filename: cv.filename,
+          pythonLength: cv.text_python?.length ?? 0,
+          pdfjsLength: cv.text_pdfjs?.length ?? 0,
+          nodeLength: cv.text_node?.length ?? 0,
+          pythonError: Boolean(cv.extract_error_python),
+          pdfjsError: Boolean(cv.extract_error_pdfjs),
+          nodeError: Boolean(cv.extract_error_node),
+        },
+      });
       return NextResponse.json(
         { error: "No extracted text available for this CV" },
         { status: 400 }
       );
     }
 
+    analysisIdForEvents = crypto.randomUUID();
     const result = await scoreCVWithAI({
       apiKey: geminiApiKey.trim(),
       mode,
@@ -105,10 +138,31 @@ export async function POST(req: NextRequest) {
       context: mode === "general" ? (context ?? null) : null,
       jobDescription: mode === "job_match" ? jobDescription : null,
       jobUrl: mode === "job_match" ? jobUrl : null,
+      observability: {
+        userId,
+        cvId,
+        analysisId: analysisIdForEvents,
+        requestId,
+      },
+    });
+
+    const persistStartedAt = performance.now();
+    await recordProcessingEvent({
+      userId,
+      cvId,
+      analysisId: analysisIdForEvents,
+      requestId,
+      stage: "analysis_persist",
+      status: "started",
+      source: "api_analyses",
+      metadata: {
+        mode,
+        model,
+      },
     });
 
     const analysis = await createAnalysis(supabase, {
-      id: crypto.randomUUID(),
+      id: analysisIdForEvents,
       user_id: user.id,
       cv_id: cv.id,
       title: trimmedTitle,
@@ -137,9 +191,36 @@ export async function POST(req: NextRequest) {
       missing_keywords: result.missingKeywords,
     });
 
+    await recordProcessingEvent({
+      userId,
+      cvId,
+      analysisId: analysis.id,
+      requestId,
+      stage: "analysis_persist",
+      status: "success",
+      source: "api_analyses",
+      durationMs: performance.now() - persistStartedAt,
+      metadata: {
+        mode,
+        model,
+        score: analysis.ai_score,
+      },
+    });
+
     return NextResponse.json(analysis);
   } catch (error: unknown) {
     console.error("Create analysis error:", error);
+    await recordProcessingEvent({
+      userId,
+      cvId: cvIdForEvents,
+      analysisId: analysisIdForEvents,
+      requestId,
+      stage: "analysis_request",
+      status: "error",
+      source: "api_analyses",
+      errorCode: getErrorCode(error),
+      errorMessage: sanitizeErrorMessage(error),
+    });
     return NextResponse.json(
       { error: "Failed to create analysis", details: getErrorMessage(error) },
       { status: 500 }
