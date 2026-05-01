@@ -63,6 +63,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<AppView>("new");
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [geminiApiKey, setGeminiApiKey] = useState("");
 
   // Fetch analyses list
@@ -99,6 +100,13 @@ export default function Home() {
     supabase.auth.getUser().then(({ data }) => {
       setUserEmail(data.user?.email ?? null);
     });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((res) => (res.ok ? res.json() : { isAdmin: false }))
+      .then((data) => setIsAdmin(Boolean(data.isAdmin)))
+      .catch(() => setIsAdmin(false));
   }, []);
 
   useEffect(() => {
@@ -248,6 +256,7 @@ export default function Home() {
         onOpenSettings={handleOpenSettings}
         onDelete={handleDelete}
         userEmail={userEmail}
+        isAdmin={isAdmin}
       />
 
       {/* Main Content */}

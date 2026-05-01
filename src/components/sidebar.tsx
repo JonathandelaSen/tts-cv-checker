@@ -15,6 +15,7 @@ import {
   Briefcase,
   FolderOpen,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import type { AnalysisMode } from "@/lib/db";
 
@@ -40,6 +41,7 @@ interface SidebarProps {
   onOpenSettings: () => void;
   onDelete: (id: string) => void;
   userEmail: string | null;
+  isAdmin?: boolean;
 }
 
 export default function Sidebar({
@@ -52,6 +54,7 @@ export default function Sidebar({
   onOpenSettings,
   onDelete,
   userEmail,
+  isAdmin = false,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const generalAnalyses = analyses.filter((a) => a.analysis_mode === "general");
@@ -347,6 +350,20 @@ export default function Sidebar({
           <Settings className="w-4 h-4 shrink-0" />
           {!collapsed && <span>Configuración</span>}
         </button>
+        {isAdmin && (
+          <a
+            href="/admin"
+            className={`
+              w-full flex items-center gap-2 rounded-lg font-medium transition-all duration-150
+              text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200
+              ${collapsed ? "justify-center p-2" : "px-3 py-2.5 text-sm"}
+            `}
+            title="Observabilidad"
+          >
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>Observabilidad</span>}
+          </a>
+        )}
         {!collapsed && (
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2 min-w-0 text-[11px] text-zinc-500">

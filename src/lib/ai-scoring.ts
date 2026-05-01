@@ -1,5 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import type { AIContext, AnalysisMode, JobKeyData } from "@/lib/db";
+import {
+  getErrorCode,
+  recordProcessingEvent,
+  sanitizeErrorMessage,
+} from "@/lib/observability";
 
 export interface AIScoreResult {
   score: number;
@@ -11,6 +16,13 @@ export interface AIScoreResult {
   matchingKeywords: string[];
   missingKeywords: string[];
   jobKeyData: JobKeyData | null;
+}
+
+export interface AIObservabilityContext {
+  userId: string;
+  requestId: string;
+  cvId?: string | null;
+  analysisId?: string | null;
 }
 
 function cleanArray(value: unknown): string[] {
@@ -134,21 +146,111 @@ export async function scoreCVWithAI(input: {
   context?: AIContext | null;
   jobDescription?: string | null;
   jobUrl?: string | null;
+  observability?: AIObservabilityContext | null;
 }): Promise<AIScoreResult> {
   const systemPrompt =
     input.mode === "general"
       ? buildGeneralPrompt(input.context ?? null)
       : buildJobMatchPrompt(input.jobDescription ?? "", input.jobUrl);
   const googleAI = new GoogleGenAI({ apiKey: input.apiKey });
+  const startedAt = performance.now();
 
-  const response = await googleAI.models.generateContent({
-    model: input.model,
-    contents: [{ role: "user", parts: [{ text: input.text }] }],
-    config: {
-      systemInstruction: systemPrompt,
-      responseMimeType: "application/json",
-    },
-  });
+  if (input.observability) {
+    await recordProcessingEvent({
+      userId: input.observability.userId,
+      cvId: input.observability.cvId,
+      analysisId: input.observability.analysisId,
+      requestId: input.observability.requestId,
+      stage: "ai_analysis",
+      status: "started",
+      source: "google_gemini",
+      textLength: input.text.length,
+      metadata: {
+        mode: input.mode,
+        model: input.model,
+        jobDescriptionLength: input.jobDescription?.length ?? 0,
+        hasJobUrl: Boolean(input.jobUrl?.trim()),
+        hasAdditionalContext: Boolean(input.context?.additionalContext?.trim()),
+      },
+    });
+  }
 
-  return parseAIResult(response.text || "{}");
+  let rawText = "";
+
+  try {
+    const response = await googleAI.models.generateContent({
+      model: input.model,
+      contents: [{ role: "user", parts: [{ text: input.text }] }],
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+      },
+    });
+    rawText = response.text || "{}";
+
+    if (input.observability) {
+      await recordProcessingEvent({
+        userId: input.observability.userId,
+        cvId: input.observability.cvId,
+        analysisId: input.observability.analysisId,
+        requestId: input.observability.requestId,
+        stage: "ai_analysis",
+        status: "success",
+        source: "google_gemini",
+        durationMs: performance.now() - startedAt,
+        textLength: input.text.length,
+        metadata: {
+          mode: input.mode,
+          model: input.model,
+          responseLength: rawText.length,
+        },
+      });
+    }
+  } catch (error: unknown) {
+    if (input.observability) {
+      await recordProcessingEvent({
+        userId: input.observability.userId,
+        cvId: input.observability.cvId,
+        analysisId: input.observability.analysisId,
+        requestId: input.observability.requestId,
+        stage: "ai_analysis",
+        status: "error",
+        source: "google_gemini",
+        durationMs: performance.now() - startedAt,
+        textLength: input.text.length,
+        errorCode: getErrorCode(error),
+        errorMessage: sanitizeErrorMessage(error),
+        metadata: {
+          mode: input.mode,
+          model: input.model,
+        },
+      });
+    }
+    throw error;
+  }
+
+  try {
+    return parseAIResult(rawText);
+  } catch (error: unknown) {
+    if (input.observability) {
+      await recordProcessingEvent({
+        userId: input.observability.userId,
+        cvId: input.observability.cvId,
+        analysisId: input.observability.analysisId,
+        requestId: input.observability.requestId,
+        stage: "ai_response_parse",
+        status: "error",
+        source: "google_gemini",
+        durationMs: performance.now() - startedAt,
+        errorCode: getErrorCode(error),
+        errorMessage: sanitizeErrorMessage(error),
+        metadata: {
+          mode: input.mode,
+          model: input.model,
+          responseLength: rawText.length,
+        },
+      });
+    }
+    throw error;
+  }
 }

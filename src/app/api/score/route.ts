@@ -7,9 +7,19 @@ import {
 } from "@/lib/db";
 import { scoreCVWithAI } from "@/lib/ai-scoring";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  createRequestId,
+  getErrorCode,
+  recordProcessingEvent,
+  sanitizeErrorMessage,
+} from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId("score");
+  let userId: string | null = null;
+  let analysisIdForEvents: string | null = null;
+  let cvIdForEvents: string | null = null;
   try {
     const supabase = await createClient();
     const {
@@ -18,6 +28,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    userId = user.id;
 
     const {
       analysisId,
@@ -43,6 +54,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    analysisIdForEvents = analysisId;
 
     if (mode === "job_match" && !jobDescription?.trim()) {
       return NextResponse.json(
@@ -68,10 +80,32 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+    cvIdForEvents = analysis.cv_id;
 
     const text =
       analysis.text_python || analysis.text_pdfjs || analysis.text_node;
     if (!text) {
+      await recordProcessingEvent({
+        userId,
+        cvId: analysis.cv_id,
+        analysisId,
+        requestId,
+        stage: "analysis_preflight",
+        status: "error",
+        source: "api_score",
+        fileSize: analysis.file_size,
+        errorCode: "no_extracted_text_available",
+        errorMessage: "No extracted text available for this analysis.",
+        metadata: {
+          filename: analysis.filename,
+          pythonLength: analysis.text_python?.length ?? 0,
+          pdfjsLength: analysis.text_pdfjs?.length ?? 0,
+          nodeLength: analysis.text_node?.length ?? 0,
+          pythonError: Boolean(analysis.extract_error_python),
+          pdfjsError: Boolean(analysis.extract_error_pdfjs),
+          nodeError: Boolean(analysis.extract_error_node),
+        },
+      });
       return NextResponse.json(
         { error: "No extracted text available for this analysis" },
         { status: 400 }
@@ -86,6 +120,27 @@ export async function POST(req: NextRequest) {
       context: mode === "general" ? (context ?? null) : null,
       jobDescription: mode === "job_match" ? jobDescription : null,
       jobUrl: mode === "job_match" ? jobUrl : null,
+      observability: {
+        userId,
+        cvId: analysis.cv_id,
+        analysisId,
+        requestId,
+      },
+    });
+
+    const persistStartedAt = performance.now();
+    await recordProcessingEvent({
+      userId,
+      cvId: analysis.cv_id,
+      analysisId,
+      requestId,
+      stage: "analysis_persist",
+      status: "started",
+      source: "api_score",
+      metadata: {
+        mode,
+        model,
+      },
     });
 
     const updated = await updateAnalysisWithAI(supabase, analysisId, user.id, {
@@ -105,9 +160,38 @@ export async function POST(req: NextRequest) {
       missing_keywords: parsedResult.missingKeywords,
     });
 
+    await recordProcessingEvent({
+      userId,
+      cvId: analysis.cv_id,
+      analysisId,
+      requestId,
+      stage: "analysis_persist",
+      status: updated ? "success" : "warning",
+      source: "api_score",
+      durationMs: performance.now() - persistStartedAt,
+      errorCode: updated ? null : "analysis_update_missing",
+      errorMessage: updated ? null : "Analysis update returned no row.",
+      metadata: {
+        mode,
+        model,
+        score: updated?.ai_score ?? null,
+      },
+    });
+
     return NextResponse.json(updated);
   } catch (error: unknown) {
     console.error("Gemini ATS Error:", error);
+    await recordProcessingEvent({
+      userId,
+      cvId: cvIdForEvents,
+      analysisId: analysisIdForEvents,
+      requestId,
+      stage: "analysis_request",
+      status: "error",
+      source: "api_score",
+      errorCode: getErrorCode(error),
+      errorMessage: sanitizeErrorMessage(error),
+    });
     return NextResponse.json(
       { error: "Failed to score CV with ATS", details: getErrorMessage(error) },
       { status: 500 }
