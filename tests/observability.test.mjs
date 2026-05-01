@@ -47,6 +47,8 @@ test("processing event writes are best effort and sanitized", () => {
   assert.match(observabilitySource, /catch \(error: unknown\)/);
   assert.match(observabilitySource, /redacted-api-key/);
   assert.match(observabilitySource, /api\.\?key\|authorization\|prompt/);
+  assert.doesNotMatch(observabilitySource, /\|pdf\|/);
+  assert.match(observabilitySource, /pdf\.\?buffer/);
 });
 
 test("PDF extraction emits per-parser events and no-text aggregate signal", () => {
@@ -55,6 +57,9 @@ test("PDF extraction emits per-parser events and no-text aggregate signal", () =
   assert.match(pdfExtractionSource, /source: "node_pdfjs"/);
   assert.match(pdfExtractionSource, /source: "node_pdf_parse"/);
   assert.match(pdfExtractionSource, /no_extracted_text_available/);
+  assert.match(pdfExtractionSource, /pdfjsErrorMessage/);
+  assert.match(pdfExtractionSource, /pythonErrorMessage/);
+  assert.match(pdfExtractionSource, /nodeErrorMessage/);
 });
 
 test("analysis routes record no-text preflight events before returning 400", () => {

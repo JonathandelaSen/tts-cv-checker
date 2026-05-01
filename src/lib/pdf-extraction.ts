@@ -225,6 +225,15 @@ export async function extractPdfText(
         pythonError: Boolean(extract_error_python),
         pdfjsError: Boolean(extract_error_pdfjs),
         nodeError: Boolean(extract_error_node),
+        pythonErrorMessage: extract_error_python
+          ? sanitizeErrorMessage(extract_error_python)
+          : null,
+        pdfjsErrorMessage: extract_error_pdfjs
+          ? sanitizeErrorMessage(extract_error_pdfjs)
+          : null,
+        nodeErrorMessage: extract_error_node
+          ? sanitizeErrorMessage(extract_error_node)
+          : null,
       },
     });
   }

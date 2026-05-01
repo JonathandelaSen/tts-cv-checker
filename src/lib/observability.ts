@@ -234,7 +234,11 @@ function sanitizeMetadata(value: unknown, depth = 0): unknown {
   for (const [key, nestedValue] of Object.entries(
     value as Record<string, unknown>
   )) {
-    if (/api.?key|authorization|prompt|contents|raw|pdf|cv.?text/i.test(key)) {
+    if (
+      /api.?key|authorization|prompt|contents|raw|cv.?text|full.?text|file.?buffer|pdf.?buffer|base64/i.test(
+        key
+      )
+    ) {
       output[key] = "[redacted]";
       continue;
     }
