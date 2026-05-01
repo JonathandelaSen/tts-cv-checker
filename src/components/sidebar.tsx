@@ -34,11 +34,12 @@ export interface AnalysisSummary {
 interface SidebarProps {
   analyses: AnalysisSummary[];
   activeId: string | null;
-  activeView: "new" | "analysis" | "cvs" | "settings";
+  activeView: "new" | "analysis" | "cvs" | "settings" | "admin";
   onSelect: (id: string) => void;
   onNewAnalysis: () => void;
   onOpenCVs: () => void;
   onOpenSettings: () => void;
+  onOpenAdmin: () => void;
   onDelete: (id: string) => void;
   userEmail: string | null;
   isAdmin?: boolean;
@@ -52,6 +53,7 @@ export default function Sidebar({
   onNewAnalysis,
   onOpenCVs,
   onOpenSettings,
+  onOpenAdmin,
   onDelete,
   userEmail,
   isAdmin = false,
@@ -351,18 +353,19 @@ export default function Sidebar({
           {!collapsed && <span>Configuración</span>}
         </button>
         {isAdmin && (
-          <a
-            href="/admin"
+          <button
+            type="button"
+            onClick={onOpenAdmin}
             className={`
               w-full flex items-center gap-2 rounded-lg font-medium transition-all duration-150
-              text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200
+              ${activeView === "admin" ? "bg-emerald-500/10 text-emerald-200" : "text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200"}
               ${collapsed ? "justify-center p-2" : "px-3 py-2.5 text-sm"}
             `}
             title="Observabilidad"
           >
             <ShieldCheck className="w-4 h-4 shrink-0" />
             {!collapsed && <span>Observabilidad</span>}
-          </a>
+          </button>
         )}
         {!collapsed && (
           <div className="flex items-center justify-between gap-2 px-1">

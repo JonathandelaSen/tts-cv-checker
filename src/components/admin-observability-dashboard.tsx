@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  ArrowLeft,
   CheckCircle2,
   Clock3,
   Filter,
@@ -131,37 +129,29 @@ export default function AdminObservabilityDashboard({
   }, [status, stage]);
 
   return (
-    <main className="min-h-screen bg-[#09090f] text-zinc-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5">
-        <header className="flex shrink-0 flex-col gap-4 border-b border-white/[0.06] pb-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-400 transition hover:bg-white/[0.06] hover:text-zinc-100"
-              title="Volver"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <div>
-              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-emerald-300">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                {userEmail ?? "Admin"}
-              </div>
-              <h1 className="text-2xl font-semibold tracking-normal">
-                Observabilidad interna
-              </h1>
+    <div className="flex h-full min-h-0 w-full flex-col bg-[#09090f] px-5 py-5 text-zinc-100">
+      <header className="flex shrink-0 flex-col gap-4 border-b border-white/[0.06] pb-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4">
+          <div>
+            <div className="mb-1 flex items-center gap-2 text-xs font-medium text-emerald-300">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {userEmail ?? "Admin"}
             </div>
+            <h1 className="text-2xl font-semibold tracking-normal">
+              Observabilidad interna
+            </h1>
           </div>
-          <button
-            type="button"
-            onClick={loadEvents}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-100 px-3 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:opacity-60"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
-          </button>
-        </header>
+        </div>
+        <button
+          type="button"
+          onClick={loadEvents}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-100 px-3 text-sm font-medium text-zinc-950 transition hover:bg-white disabled:opacity-60"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Actualizar
+        </button>
+      </header>
 
         <section className="grid min-h-0 flex-1 gap-4 py-5 lg:grid-cols-[420px_1fr]">
           <aside className="flex min-h-[420px] flex-col overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
@@ -364,7 +354,6 @@ export default function AdminObservabilityDashboard({
           </section>
         </section>
       </div>
-    </main>
   );
 }
 

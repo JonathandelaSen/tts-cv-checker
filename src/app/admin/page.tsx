@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import AdminObservabilityDashboard from "@/components/admin-observability-dashboard";
+import AppShell from "@/components/app-shell";
 import { isAdminUser } from "@/lib/observability";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,5 +12,11 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!(await isAdminUser(user.id))) redirect("/");
 
-  return <AdminObservabilityDashboard userEmail={user.email ?? null} />;
+  return (
+    <AppShell
+      initialView="admin"
+      initialUserEmail={user.email ?? null}
+      initialIsAdmin
+    />
+  );
 }
