@@ -285,7 +285,7 @@ export default function AppShell({
       />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
         <AnimatePresence mode="wait">
           {activeView === "new" ? (
             <motion.div
@@ -293,7 +293,7 @@ export default function AppShell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col"
+              className="flex-1 flex flex-col min-h-0"
             >
               <NewAnalysisFlow
                 cvs={cvs}
@@ -310,7 +310,7 @@ export default function AppShell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
               <CVLibrary
                 cvs={cvs}
@@ -325,7 +325,7 @@ export default function AppShell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
               <SettingsView
                 geminiApiKey={geminiApiKey}
@@ -339,7 +339,7 @@ export default function AppShell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
               <AdminObservabilityDashboard userEmail={userEmail} />
             </motion.div>
@@ -362,7 +362,7 @@ export default function AppShell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
               {/* Tabs - Extraction / Analysis */}
               {activeAnalysis.ai_score !== null && (
@@ -407,7 +407,7 @@ export default function AppShell({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.15 }}
-                    className="flex-1 flex flex-col overflow-hidden"
+                    className="flex-1 flex flex-col overflow-hidden min-h-0"
                   >
                     <ExtractionView
                       analysis={activeAnalysis}
@@ -424,7 +424,7 @@ export default function AppShell({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.15 }}
-                    className="flex-1 flex flex-col overflow-hidden"
+                    className="flex-1 flex flex-col overflow-hidden min-h-0"
                   >
                     <AIAnalysisView
                       analysis={{

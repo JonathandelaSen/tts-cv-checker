@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Settings,
   ShieldCheck,
+  Menu,
 } from "lucide-react";
 import type { AnalysisMode } from "@/lib/db";
 
@@ -59,6 +60,21 @@ export default function Sidebar({
   isAdmin = false,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setCollapsed(true);
+      }
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const generalAnalyses = analyses.filter((a) => a.analysis_mode === "general");
   const jobAnalyses = analyses.filter((a) => a.analysis_mode === "job_match");
 
@@ -85,12 +101,44 @@ export default function Sidebar({
   };
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 56 : 280 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
-      className="h-screen flex flex-col border-r border-white/[0.06] bg-[#0d0d14]/80 backdrop-blur-xl shrink-0 overflow-hidden relative z-10"
-    >
+    <>
+      <AnimatePresence>
+        {isMobile && collapsed && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={() => setCollapsed(false)}
+            className="md:hidden fixed bottom-6 right-6 z-[60] w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-900/30 active:scale-95 transition-transform"
+          >
+            <Menu className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isMobile && !collapsed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setCollapsed(true)}
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.aside
+        initial={false}
+        animate={{ 
+          width: isMobile ? (collapsed ? 0 : 280) : (collapsed ? 56 : 280),
+          x: isMobile && collapsed ? -280 : 0
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className={`h-screen flex flex-col border-r border-white/[0.06] bg-[#0d0d14]/95 backdrop-blur-xl shrink-0 overflow-hidden z-50 ${
+          isMobile ? "fixed left-0 top-0 bottom-0" : "relative"
+        }`}
+      >
       {/* Header */}
       <div className="flex items-center justify-between p-3 h-14 shrink-0">
         <AnimatePresence mode="wait">
@@ -377,5 +425,6 @@ export default function Sidebar({
         )}
       </div>
     </motion.aside>
+    </>
   );
 }
