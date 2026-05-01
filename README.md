@@ -1,55 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# 🚀 TTS CV AI Checker
 
-### Local Supabase
+**AI-driven analysis, optimization, and elevation of your CV.**
 
-This app uses Supabase Auth, Postgres, and Storage locally.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Local_Ready-green?logo=supabase)](https://supabase.com/)
+[![Gemini](https://img.shields.io/badge/AI-Google_Gemini-blue?logo=google)](https://ai.google.dev/)
+[![TailwindCSS](https://img.shields.io/badge/Styling-Tailwind_4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+
+</div>
+
+<br/>
+
+## ✨ Key Features
+
+It's not just a parser; it's a complete toolkit for your resume:
+
+- 🎯 **Targeted Job Matching:** Paste a job description and get an ATS-style match rate and targeted recommendations.
+- 📊 **General Profile Review:** Receive a comprehensive evaluation and a custom questionnaire to improve your CV.
+- 📚 **Smart CV Library:** Upload, preview (PDF support), and manage multiple versions of your resume seamlessly.
+
+---
+
+## 🛠️ Quick Start (Local Setup)
+
+Get the project running on your local machine in just a few minutes.
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v20+)
+- [Docker](https://www.docker.com/) (Required for local Supabase)
+
+### 1. Clone the repository
 
 ```bash
+git clone https://github.com/JonathandelaSen/tts-cv-ai-checker.git
+cd tts-cv-ai-checker
 npm install
+```
+
+### 2. Start the Database
+
+We use [Supabase](https://supabase.com/) for authentication, database, and storage. You can run it entirely locally:
+
+```bash
 npm run supabase:start
+```
+
+_(Keep the terminal open to copy the API keys generated in the output!)_
+
+### 3. Environment Setup
+
+```bash
 cp .env.example .env.local
 ```
 
-Use the `Publishable` key printed by `npm run supabase:start` as
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the `Secret` key as
-`SUPABASE_SERVICE_ROLE_KEY`, in `.env.local`.
-This repo is configured to avoid the default Supabase local ports:
+Fill in the variables in `.env.local`:
 
-- App API: `http://127.0.0.1:55431`
-- Studio: `http://127.0.0.1:55433`
-- Database: `postgresql://postgres:postgres@127.0.0.1:55432/postgres`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` & `SUPABASE_SERVICE_ROLE_KEY`: From the local Supabase start output.
+- `GEMINI_API_KEY`: Your Google Gemini API key.
 
-First, run the development server:
+### 4. Run the App
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+🎉 **Open [http://localhost:3000](http://localhost:3000) and start uploading your CVs!**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧱 Tech Stack
 
-## Learn More
+A modern, robust, and scalable foundation:
 
-To learn more about Next.js, take a look at the following resources:
+- **Frontend:** Next.js 16 (App Router), React 19, TailwindCSS 4, Framer Motion
+- **Backend & DB:** Supabase (Auth, Postgres DB, Edge Storage)
+- **AI Integrations:** Google GenAI (Gemini)
+- **File Processing:** `pdf-parse`, `pdfjs-dist`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+<br/>
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<div align="center">
+  <i>Empower your job search with AI.</i>
+</div>
