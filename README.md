@@ -30,7 +30,7 @@ Get the project running on your local machine in just a few minutes.
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v20+)
-- [Docker](https://www.docker.com/) (Required for local Supabase)
+- [Docker](https://www.docker.com/) (required for local Supabase and the Python parser)
 
 ### 1. Clone the repository
 
@@ -60,8 +60,24 @@ Fill in the variables in `.env.local`:
 
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` & `SUPABASE_SERVICE_ROLE_KEY`: From the local Supabase start output.
 - `GEMINI_API_KEY`: Your Google Gemini API key.
+- `PYTHON_PARSER_URL`: `http://127.0.0.1:8001` for local development.
+- `PYTHON_PARSER_SECRET`: Shared secret used by the Next.js app to call the Python parser.
 
-### 4. Run the App
+### 4. Start the Python Parser
+
+The Python parser runs as a small local service and mirrors the production parser.
+
+```bash
+cp services/pdf-parser/.env.example services/pdf-parser/.env.local
+```
+
+Set `SUPABASE_SERVICE_ROLE_KEY` in `services/pdf-parser/.env.local` from the local Supabase output, then run:
+
+```bash
+npm run parser:dev
+```
+
+### 5. Run the App
 
 ```bash
 npm run dev
@@ -78,7 +94,27 @@ A modern, robust, and scalable foundation:
 - **Frontend:** Next.js 16 (App Router), React 19, TailwindCSS 4, Framer Motion
 - **Backend & DB:** Supabase (Auth, Postgres DB, Edge Storage)
 - **AI Integrations:** Google GenAI (Gemini)
-- **File Processing:** `pdf-parse`, `pdfjs-dist`
+- **File Processing:** `pdf-parse`, `pdfjs-dist`, Python `pdfminer.six`
+
+## Python Parser Deployment
+
+Deploy the parser as a separate Vercel project named `ats-cv-python-parser`:
+
+```bash
+cd services/pdf-parser
+vercel link
+vercel env add PYTHON_PARSER_SECRET production
+vercel env add SUPABASE_URL production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel --prod
+```
+
+Add these variables to the main Next.js Vercel project:
+
+```env
+PYTHON_PARSER_URL=https://ats-cv-python-parser.vercel.app
+PYTHON_PARSER_SECRET=the-same-secret
+```
 
 <br/>
 

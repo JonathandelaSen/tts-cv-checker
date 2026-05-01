@@ -53,7 +53,7 @@ test("processing event writes are best effort and sanitized", () => {
 
 test("PDF extraction emits per-parser events and no-text aggregate signal", () => {
   assert.match(pdfExtractionSource, /stage: "pdf_parser"/);
-  assert.match(pdfExtractionSource, /source: "python_pdfminer"/);
+  assert.match(pdfExtractionSource, /source: "python_pdfminer_service"/);
   assert.match(pdfExtractionSource, /source: "node_pdfjs"/);
   assert.match(pdfExtractionSource, /source: "node_pdf_parse"/);
   assert.match(pdfExtractionSource, /no_extracted_text_available/);

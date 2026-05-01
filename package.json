@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "parser:dev": "docker compose up pdf-parser",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:sync-email-template": "node scripts/sync-supabase-email-template.mjs"

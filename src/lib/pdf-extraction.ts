@@ -29,6 +29,12 @@ export interface PdfExtractionContext {
   requestId: string;
   fileSize?: number | null;
   filename?: string | null;
+  pdfStoragePath?: string | null;
+}
+
+interface PythonParserResponse {
+  text?: string | null;
+  error?: string | null;
 }
 
 function parseScriptJson(stdout: string): { text?: string; error?: string } {
@@ -68,6 +74,61 @@ async function recordParserEvent(
       filename: context.filename,
     },
   });
+}
+
+async function extractWithPythonService(
+  context: PdfExtractionContext | undefined
+): Promise<PythonParserResponse> {
+  if (!context?.pdfStoragePath) {
+    return { error: "Missing PDF storage path for Python parser service." };
+  }
+
+  const parserUrl = process.env.PYTHON_PARSER_URL?.replace(/\/+$/, "");
+  const parserSecret = process.env.PYTHON_PARSER_SECRET;
+
+  if (!parserUrl || !parserSecret) {
+    return { error: "Python parser service is not configured." };
+  }
+
+  const controller = new AbortController();
+  const timeoutMs = Number(process.env.PYTHON_PARSER_TIMEOUT_MS ?? 15000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${parserUrl}/extract`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${parserSecret}`,
+      },
+      body: JSON.stringify({
+        bucket: "cv-pdfs",
+        storagePath: context.pdfStoragePath,
+        cvId: context.cvId,
+        requestId: context.requestId,
+      }),
+      signal: controller.signal,
+    });
+
+    const body = (await response.json().catch(() => ({}))) as PythonParserResponse;
+
+    if (!response.ok) {
+      return {
+        error:
+          body.error ||
+          `Python parser service returned HTTP ${response.status}.`,
+      };
+    }
+
+    return {
+      text: body.text || null,
+      error: body.error || null,
+    };
+  } catch (error: unknown) {
+    return { error: getErrorMessage(error) };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function extractPdfText(
@@ -165,22 +226,14 @@ export async function extractPdfText(
     try {
       const parserStartedAt = performance.now();
       await recordParserEvent(context, {
-        source: "python_pdfminer",
+        source: "python_pdfminer_service",
         status: "started",
       });
-      const pythonPath = [process.cwd(), "venv", "bin", "python"].join(
-        path.sep
-      );
-      const scriptPath = [process.cwd(), "scripts", "parser.py"].join(path.sep);
-      const { stdout } = await execFileAsync(pythonPath, [
-        scriptPath,
-        tempFilePath,
-      ]);
-      const parsedOut = parseScriptJson(stdout);
+      const parsedOut = await extractWithPythonService(context);
       text_python = parsedOut.text || null;
       extract_error_python = parsedOut.error || null;
       await recordParserEvent(context, {
-        source: "python_pdfminer",
+        source: "python_pdfminer_service",
         status: extract_error_python ? "error" : getTextLength(text_python) > 0 ? "success" : "warning",
         durationMs: performance.now() - parserStartedAt,
         textLength: getTextLength(text_python),
@@ -192,7 +245,7 @@ export async function extractPdfText(
     } catch (e: unknown) {
       extract_error_python = getErrorMessage(e);
       await recordParserEvent(context, {
-        source: "python_pdfminer",
+        source: "python_pdfminer_service",
         status: "error",
         errorCode: getErrorCode(e),
         errorMessage: sanitizeErrorMessage(e),

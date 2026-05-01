@@ -1,0 +1,11 @@
+services:
+  pdf-parser:
+    build:
+      context: ./services/pdf-parser
+    ports:
+      - "8001:8001"
+    env_file:
+      - path: ./services/pdf-parser/.env.local
+        required: false
+    environment:
+      PYTHON_PARSER_SECRET: ${PYTHON_PARSER_SECRET:-dev-secret}

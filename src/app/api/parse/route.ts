@@ -48,19 +48,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Convert file to Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const extracted = await extractPdfText(buffer, {
-      userId,
-      cvId,
-      requestId,
-      fileSize: file.size,
-      filename: file.name,
-    });
-
     const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
     const pdfStoragePath = `${user.id}/${cvId}-${safeFilename}`;
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const storageStartedAt = performance.now();
     await recordProcessingEvent({
       userId,
@@ -106,6 +97,56 @@ export async function POST(req: NextRequest) {
       durationMs: performance.now() - storageStartedAt,
       fileSize: file.size,
     });
+
+    const extracted = await extractPdfText(buffer, {
+      userId,
+      cvId,
+      requestId,
+      fileSize: file.size,
+      filename: file.name,
+      pdfStoragePath,
+    });
+
+    const extractedTexts = [
+      extracted.text_python,
+      extracted.text_pdfjs,
+      extracted.text_node,
+    ];
+
+    if (!hasExtractedText(extractedTexts)) {
+      await supabase.storage
+        .from(CV_PDFS_BUCKET)
+        .remove([pdfStoragePath])
+        .catch(() => {});
+      await recordProcessingEvent({
+        userId,
+        cvId,
+        requestId,
+        stage: "cv_upload",
+        status: "warning",
+        source: "api_parse",
+        fileSize: file.size,
+        textLength: 0,
+        errorCode: "no_extracted_text_available",
+        errorMessage: "CV upload rejected because no parser produced usable text.",
+        metadata: {
+          filename: file.name,
+          storagePath: pdfStoragePath,
+        },
+      });
+      return NextResponse.json(
+        {
+          error:
+            "No se ha podido extraer texto del PDF. Prueba con un PDF con texto seleccionable.",
+          errors: {
+            python: extracted.extract_error_python,
+            pdfjs: extracted.extract_error_pdfjs,
+            node: extracted.extract_error_node,
+          },
+        },
+        { status: 400 }
+      );
+    }
 
     const cv = await createCV(supabase, {
       id: cvId,
