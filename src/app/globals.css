@@ -141,3 +141,155 @@
 ::selection {
   background-color: oklch(0.5 0.2 264 / 30%);
 }
+
+.cvp-shell {
+  width: 210mm;
+  min-height: 297mm;
+  margin-left: auto;
+  margin-right: auto;
+  background: #fbfaf7;
+  color: #171717;
+  padding: 22mm;
+  font-family: Georgia, "Times New Roman", serif;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+
+.cvp-card-scale {
+  min-height: 620px;
+  width: 210mm;
+  transform: scale(0.32);
+  transform-origin: top left;
+  box-shadow: none;
+  margin: 0;
+}
+
+.cvp-compact {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #ffffff;
+}
+
+.cvp-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  border-bottom: 1px solid #d8d4cc;
+  padding-bottom: 22px;
+  margin-bottom: 26px;
+}
+
+.cvp-compact .cvp-header {
+  border-bottom: 3px solid #111827;
+}
+
+.cvp-header h1 {
+  font-size: 38px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #101010;
+}
+
+.cvp-headline {
+  margin-top: 8px;
+  color: #505050;
+  font-size: 17px;
+}
+
+.cvp-contact {
+  display: flex;
+  min-width: 220px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  color: #4f4f4f;
+  text-align: right;
+}
+
+.cvp-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.cvp-compact .cvp-body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.cvp-section {
+  margin-bottom: 26px;
+}
+
+.cvp-section h2 {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #dfd9ce;
+  padding-bottom: 6px;
+  color: #161616;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.cvp-item {
+  margin-bottom: 18px;
+  break-inside: avoid;
+}
+
+.cvp-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.cvp-item h3,
+.cvp-skills h3 {
+  color: #161616;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.cvp-item-head p,
+.cvp-item-head span,
+.cvp-description {
+  color: #5a5a5a;
+  font-size: 12px;
+}
+
+.cvp-summary,
+.cvp-item li,
+.cvp-skills p,
+.cvp-tags span {
+  color: #2d2d2d;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.cvp-item ul {
+  margin-top: 8px;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.cvp-item li {
+  margin-bottom: 4px;
+}
+
+.cvp-skills {
+  display: grid;
+  gap: 12px;
+}
+
+.cvp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cvp-tags span {
+  border: 1px solid #ded8ce;
+  padding: 4px 7px;
+}

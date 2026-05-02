@@ -1,4 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  CV_PROFILE_SCHEMA_VERSION,
+  normalizeStandardCVProfile,
+  type StandardCVProfile,
+} from "@/lib/cv-profile";
 import type { ExtractedPdfText } from "@/lib/pdf-extraction";
 
 export const CV_PDFS_BUCKET = "cv-pdfs";
@@ -43,6 +48,18 @@ export interface CVSummary {
   name: string;
   filename: string;
   file_size: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CVStructuredProfile {
+  id: string;
+  user_id: string;
+  cv_id: string;
+  schema_version: string;
+  source_text_hash: string;
+  ai_model: string;
+  profile: StandardCVProfile;
   created_at: string;
   updated_at: string;
 }
@@ -265,6 +282,76 @@ export async function deleteCV(
   const { error } = await supabase.from("cvs").delete().eq("id", id);
   if (error) throw error;
   return { status: "deleted" };
+}
+
+// ---------------------------------------------------------------------------
+// Structured CV Profile Helpers
+// ---------------------------------------------------------------------------
+
+function normalizeStructuredProfile(
+  row: Record<string, unknown>
+): CVStructuredProfile {
+  return {
+    id: row.id as string,
+    user_id: row.user_id as string,
+    cv_id: row.cv_id as string,
+    schema_version: row.schema_version as string,
+    source_text_hash: row.source_text_hash as string,
+    ai_model: row.ai_model as string,
+    profile: normalizeStandardCVProfile(row.profile),
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+  };
+}
+
+export async function getCVStructuredProfile(
+  supabase: SupabaseClient,
+  cvId: string,
+  userId: string,
+  schemaVersion = CV_PROFILE_SCHEMA_VERSION
+): Promise<CVStructuredProfile | null> {
+  const { data, error } = await supabase
+    .from("cv_structured_profiles")
+    .select("*")
+    .eq("cv_id", cvId)
+    .eq("user_id", userId)
+    .eq("schema_version", schemaVersion)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? normalizeStructuredProfile(data as Record<string, unknown>) : null;
+}
+
+export async function upsertCVStructuredProfile(
+  supabase: SupabaseClient,
+  data: {
+    user_id: string;
+    cv_id: string;
+    schema_version?: string;
+    source_text_hash: string;
+    ai_model: string;
+    profile: StandardCVProfile;
+  }
+): Promise<CVStructuredProfile> {
+  const schemaVersion = data.schema_version ?? CV_PROFILE_SCHEMA_VERSION;
+  const { data: profile, error } = await supabase
+    .from("cv_structured_profiles")
+    .upsert(
+      {
+        user_id: data.user_id,
+        cv_id: data.cv_id,
+        schema_version: schemaVersion,
+        source_text_hash: data.source_text_hash,
+        ai_model: data.ai_model,
+        profile: data.profile,
+      },
+      { onConflict: "cv_id,schema_version" }
+    )
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return normalizeStructuredProfile(profile as Record<string, unknown>);
 }
 
 // ---------------------------------------------------------------------------

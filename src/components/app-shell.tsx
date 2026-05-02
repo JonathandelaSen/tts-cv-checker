@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Sidebar, { type AnalysisSummary } from "@/components/sidebar";
 import NewAnalysisFlow from "@/components/new-analysis-flow";
 import CVLibrary from "@/components/cv-library";
+import TemplatesView from "@/components/templates-view";
 import ExtractionView from "@/components/extraction-view";
 import AIAnalysisView from "@/components/ai-analysis-view";
 import SettingsView from "@/components/settings-view";
@@ -15,7 +16,7 @@ import type { AnalysisMode, AIContext, CVSummary } from "@/lib/db";
 import { getStoredGeminiApiKey } from "@/lib/browser-preferences";
 
 type ViewTab = "extraction" | "analysis";
-type AppView = "new" | "analysis" | "cvs" | "settings" | "admin";
+type AppView = "new" | "analysis" | "cvs" | "templates" | "settings" | "admin";
 
 interface FullAnalysis {
   id: string;
@@ -164,6 +165,12 @@ export default function AppShell({
         setActiveAnalysisId(null);
         setActiveAnalysis(null);
       });
+    } else if (view === "templates") {
+      queueMicrotask(() => {
+        setActiveView("templates");
+        setActiveAnalysisId(null);
+        setActiveAnalysis(null);
+      });
     } else if (view === "settings") {
       queueMicrotask(() => {
         setActiveView("settings");
@@ -204,6 +211,14 @@ export default function AppShell({
     setActiveAnalysisId(null);
     setActiveAnalysis(null);
     window.history.replaceState(null, "", "/?view=cvs");
+    fetchCVs();
+  };
+
+  const handleOpenTemplates = () => {
+    setActiveView("templates");
+    setActiveAnalysisId(null);
+    setActiveAnalysis(null);
+    window.history.replaceState(null, "", "/?view=templates");
     fetchCVs();
   };
 
@@ -277,6 +292,7 @@ export default function AppShell({
         onSelect={handleSelect}
         onNewAnalysis={handleNewAnalysis}
         onOpenCVs={handleOpenCVs}
+        onOpenTemplates={handleOpenTemplates}
         onOpenSettings={handleOpenSettings}
         onOpenAdmin={handleOpenAdmin}
         onDelete={handleDelete}
@@ -317,6 +333,21 @@ export default function AppShell({
                 analyses={analyses}
                 onRefresh={fetchCVs}
                 onOpenAnalysis={handleSelect}
+              />
+            </motion.div>
+          ) : activeView === "templates" ? (
+            <motion.div
+              key="templates"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
+            >
+              <TemplatesView
+                cvs={cvs}
+                geminiApiKey={geminiApiKey}
+                hasGeminiApiKey={geminiApiKey.length > 0}
+                onOpenSettings={handleOpenSettings}
               />
             </motion.div>
           ) : activeView === "settings" ? (
