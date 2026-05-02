@@ -390,10 +390,10 @@ export default function ExtractionView({
           <AnimatePresence>
             {showPdfPreview && !fullscreen && (
               <motion.div
-                initial={{ opacity: 0, height: 0, lg: { width: 0, height: "auto" } }}
-                animate={{ opacity: 1, height: 400, lg: { width: "50%", height: "auto" } }}
-                exit={{ opacity: 0, height: 0, lg: { width: 0, height: "auto" } }}
-                className="flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden shadow-2xl min-h-[400px] lg:min-h-0"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="flex flex-col flex-1 rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden shadow-2xl min-h-[400px] lg:min-h-0"
               >
                 <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-indigo-500/5">
                   <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ export default function ExtractionView({
                 </div>
                 <iframe
                   src={`${pdfUrl}#toolbar=0`}
-                  className="w-full h-full border-none invert brightness-90 hue-rotate-180"
+                  className="w-full h-full border-none"
                   title="PDF Preview"
                 />
               </motion.div>
