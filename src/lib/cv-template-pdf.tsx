@@ -34,167 +34,165 @@ Font.register({
 // Disable hyphenation to match browser behavior and ensure same word wraps
 Font.registerHyphenationCallback((word) => [word]);
 
-const styles = StyleSheet.create({
-  page: {
-    padding: 62.36, // 22mm
-    fontFamily: "InterPDF",
-    fontWeight: 400,
-    fontSize: 9.75, // 13px * 0.75
-    lineHeight: 1.55,
-    color: "#2d2d2d",
-    backgroundColor: "#ffffff",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 24,
-    borderBottomWidth: 3.5,
-    borderBottomColor: "#111827",
-    paddingBottom: 16.5,
-    marginBottom: 19.5,
-  },
-  headerIdentity: {
-    flex: 1,
-    paddingRight: 9,
-  },
-  name: {
-    fontFamily: "InterPDFExtraBold",
-    fontSize: 28.5,
-    fontWeight: 400,
-    color: "#101010",
-    marginBottom: 6,
-    lineHeight: 1.1,
-  },
-  headline: {
-    fontSize: 12.75,
-    fontWeight: 400,
-    color: "#505050",
-    marginBottom: 4.5,
-    lineHeight: 1.2,
-  },
-  contact: {
-    flexShrink: 0,
-    width: 165,
-    color: "#4f4f4f",
-    fontSize: 9,
-    textAlign: "right",
-  },
-  contactLine: {
-    marginBottom: 3,
-  },
-  body: {
-    flexDirection: "column",
-    gap: 0,
-  },
-  main: {
-    flex: 1,
-  },
-  side: {
-    width: 135,
-  },
-  section: {
-    marginBottom: 19.5,
-  },
-  sectionTitle: {
-    fontFamily: "InterPDFExtraBold",
-    fontWeight: 400,
-    fontSize: 9,
-    letterSpacing: 0,
-    textTransform: "uppercase",
-    color: "#161616",
-    borderBottomWidth: 1.2,
-    borderBottomColor: "#dfd9ce",
-    paddingBottom: 4.5,
-    marginBottom: 10,
-  },
-  summary: {
-    color: "#2d2d2d",
-    fontSize: 9.75,
-    lineHeight: 1.55,
-  },
-  item: {
-    marginBottom: 13.5,
-  },
-  itemHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 15,
-    marginBottom: 3,
-  },
-  itemHeadMain: {
-    flexGrow: 1,
-    flexShrink: 1,
-  },
-  itemTitle: {
-    fontFamily: "InterPDFExtraBold",
-    fontWeight: 400,
-    fontSize: 11.25,
-    color: "#161616",
-    lineHeight: 1.2,
-  },
-  itemMeta: {
-    color: "#5a5a5a",
-    fontSize: 9,
-  },
-  itemDate: {
-    flexGrow: 0,
-    flexShrink: 0,
-    width: 80,
-    color: "#5a5a5a",
-    fontSize: 9,
-    textAlign: "right",
-  },
-  bulletContainer: {
-    flexDirection: "row",
-    marginBottom: 3,
-    paddingLeft: 4,
-  },
-  bulletDot: {
-    width: 11,
-    fontSize: 9.75,
-    color: "#2d2d2d",
-  },
-  bulletText: {
-    flex: 1,
-    color: "#2d2d2d",
-    fontSize: 9.75,
-    lineHeight: 1.55,
-  },
-  skillsGrid: {
-    flexDirection: "column",
-    gap: 9,
-  },
-  skillGroup: {
-    marginBottom: 3,
-  },
-  skillTitle: {
-    fontFamily: "InterPDFExtraBold",
-    fontWeight: 400,
-    fontSize: 11.25,
-    color: "#161616",
-    marginBottom: 1.5,
-  },
-  skillItems: {
-    color: "#2d2d2d",
-    fontSize: 9.75,
-    lineHeight: 1.55,
-  },
-  tag: {
-    color: "#2d2d2d",
-    fontSize: 9.75,
-    borderWidth: 1.2,
-    borderColor: "#ded8ce",
-    paddingVertical: 3,
-    paddingHorizontal: 5.25,
-    marginBottom: 6,
-    marginRight: 6,
-  },
-  tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 6,
-  },
-});
+const getStyles = (templateId: CVTemplateId) => {
+  const isCompact = templateId === "compact";
+
+  return StyleSheet.create({
+    page: {
+      padding: 62.36, // 22mm
+      fontFamily: isCompact ? "InterPDF" : "Times-Roman",
+      fontWeight: 400,
+      fontSize: 9.75, // 13px * 0.75
+      lineHeight: 1.55,
+      color: "#2d2d2d",
+      backgroundColor: isCompact ? "#ffffff" : "#fbfaf7",
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 24,
+      borderBottomWidth: isCompact ? 2.25 : 0.75, // 3px vs 1px
+      borderBottomColor: isCompact ? "#111827" : "#d8d4cc",
+      paddingBottom: 16.5,
+      marginBottom: 19.5,
+    },
+    headerIdentity: {
+      flex: 1,
+      paddingRight: 9,
+    },
+    name: {
+      fontFamily: isCompact ? "InterPDFExtraBold" : "Times-Bold",
+      fontSize: 28.5, // 38px * 0.75
+      fontWeight: 400,
+      color: "#101010",
+      marginBottom: 6,
+      lineHeight: 1.1,
+    },
+    headline: {
+      fontSize: 12.75, // 17px * 0.75
+      fontWeight: 400,
+      color: "#505050",
+      marginBottom: 4.5,
+      lineHeight: 1.2,
+    },
+    contact: {
+      flexShrink: 0,
+      width: 165,
+      color: "#4f4f4f",
+      fontSize: 9, // 12px * 0.75
+      textAlign: "right",
+    },
+    contactLine: {
+      marginBottom: 3,
+    },
+    body: {
+      flexDirection: "column",
+      gap: 0,
+    },
+    section: {
+      marginBottom: 19.5,
+    },
+    sectionTitle: {
+      fontFamily: isCompact ? "InterPDFExtraBold" : "Helvetica-Bold", // Use sans for section titles even in executive for modern look or keep it serif? HTML says ui-sans-serif
+      fontWeight: 400,
+      fontSize: 9, // 12px * 0.75
+      letterSpacing: 0,
+      textTransform: "uppercase",
+      color: "#161616",
+      borderBottomWidth: 0.75, // 1px
+      borderBottomColor: "#dfd9ce",
+      paddingBottom: 4.5,
+      marginBottom: 10,
+    },
+    summary: {
+      color: "#2d2d2d",
+      fontSize: 9.75,
+      lineHeight: 1.55,
+    },
+    item: {
+      marginBottom: 13.5,
+    },
+    itemHead: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 15,
+      marginBottom: 3,
+    },
+    itemHeadMain: {
+      flexGrow: 1,
+      flexShrink: 1,
+    },
+    itemTitle: {
+      fontFamily: isCompact ? "InterPDFExtraBold" : "Times-Bold",
+      fontWeight: 400,
+      fontSize: 11.25, // 15px * 0.75
+      color: "#161616",
+      lineHeight: 1.2,
+    },
+    itemMeta: {
+      color: "#5a5a5a",
+      fontSize: 9, // 12px * 0.75
+    },
+    itemDate: {
+      flexGrow: 0,
+      flexShrink: 0,
+      width: 90,
+      color: "#5a5a5a",
+      fontSize: 9,
+      textAlign: "right",
+    },
+    bulletContainer: {
+      flexDirection: "row",
+      marginBottom: 3,
+      paddingLeft: 4,
+    },
+    bulletDot: {
+      width: 11,
+      fontSize: 9.75,
+      color: "#2d2d2d",
+    },
+    bulletText: {
+      flex: 1,
+      color: "#2d2d2d",
+      fontSize: 9.75,
+      lineHeight: 1.55,
+    },
+    skillsGrid: {
+      flexDirection: "column",
+      gap: 9,
+    },
+    skillGroup: {
+      marginBottom: 3,
+    },
+    skillTitle: {
+      fontFamily: isCompact ? "InterPDFExtraBold" : "Times-Bold",
+      fontWeight: 400,
+      fontSize: 11.25,
+      color: "#161616",
+      marginBottom: 1.5,
+    },
+    skillItems: {
+      color: "#2d2d2d",
+      fontSize: 9.75,
+      lineHeight: 1.55,
+    },
+    tag: {
+      color: "#2d2d2d",
+      fontSize: 9.75,
+      borderWidth: 0.75,
+      borderColor: "#ded8ce",
+      paddingVertical: 3,
+      paddingHorizontal: 5.25,
+      marginBottom: 6,
+      marginRight: 6,
+    },
+    tagsContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 6,
+    },
+  });
+};
 
 const hasItems = <T,>(items?: T[]) => Array.isArray(items) && items.length > 0;
 
@@ -209,9 +207,11 @@ function dateRange(dates?: { start?: string; end?: string; current?: boolean }) 
 function Section({
   title,
   children,
+  styles,
 }: {
   title: string;
   children: React.ReactNode;
+  styles: any;
 }) {
   return (
     <View style={styles.section}>
@@ -221,7 +221,7 @@ function Section({
   );
 }
 
-function BulletList({ items }: { items?: string[] }) {
+function BulletList({ items, styles }: { items?: string[]; styles: any }) {
   if (!hasItems(items)) return null;
   return (
     <View style={{ marginTop: 2 }}>
@@ -235,7 +235,7 @@ function BulletList({ items }: { items?: string[] }) {
   );
 }
 
-function ExperiencePDF({ item }: { item: StandardCVExperience }) {
+function ExperiencePDF({ item, styles }: { item: StandardCVExperience; styles: any }) {
   return (
     <View style={styles.item} wrap={false}>
       <View style={styles.itemHead}>
@@ -247,12 +247,12 @@ function ExperiencePDF({ item }: { item: StandardCVExperience }) {
         </View>
         <Text style={styles.itemDate}>{dateRange(item.dates)}</Text>
       </View>
-      <BulletList items={item.bullets} />
+      <BulletList items={item.bullets} styles={styles} />
     </View>
   );
 }
 
-function EducationPDF({ item }: { item: StandardCVEducation }) {
+function EducationPDF({ item, styles }: { item: StandardCVEducation; styles: any }) {
   return (
     <View style={styles.item} wrap={false}>
       <View style={styles.itemHead}>
@@ -266,12 +266,12 @@ function EducationPDF({ item }: { item: StandardCVEducation }) {
         </View>
         <Text style={styles.itemDate}>{dateRange(item.dates)}</Text>
       </View>
-      <BulletList items={item.details} />
+      <BulletList items={item.details} styles={styles} />
     </View>
   );
 }
 
-function NamedPDF({ item }: { item: StandardCVNamedItem }) {
+function NamedPDF({ item, styles }: { item: StandardCVNamedItem; styles: any }) {
   return (
     <View style={styles.item} wrap={false}>
       <View style={styles.itemHead}>
@@ -284,7 +284,7 @@ function NamedPDF({ item }: { item: StandardCVNamedItem }) {
         <Text style={styles.itemDate}>{item.date}</Text>
       </View>
       {item.description && <Text style={styles.summary}>{item.description}</Text>}
-      <BulletList items={item.bullets} />
+      <BulletList items={item.bullets} styles={styles} />
     </View>
   );
 }
@@ -300,6 +300,7 @@ function CVTemplateDocument({
 }) {
   const labels = getSectionLabels(locale);
   const basics = profile.basics ?? {};
+  const styles = getStyles(templateId);
   const documentVariant = templateId === "compact" ? "Linea" : templateId;
 
   return (
@@ -334,12 +335,12 @@ function CVTemplateDocument({
 
         <View style={styles.body}>
           {profile.summary && (
-            <Section title={labels.about}>
+            <Section title={labels.about} styles={styles}>
               <Text style={styles.summary}>{profile.summary}</Text>
             </Section>
           )}
           {hasItems(profile.skills) && (
-            <Section title={labels.skills}>
+            <Section title={labels.skills} styles={styles}>
               <View style={styles.skillsGrid}>
                 {profile.skills?.map((group, index) => (
                   <View key={index} style={styles.skillGroup}>
@@ -353,28 +354,28 @@ function CVTemplateDocument({
             </Section>
           )}
           {hasItems(profile.experience) && (
-            <Section title={labels.experience}>
+            <Section title={labels.experience} styles={styles}>
               {profile.experience?.map((item, index) => (
-                <ExperiencePDF key={index} item={item} />
+                <ExperiencePDF key={index} item={item} styles={styles} />
               ))}
             </Section>
           )}
           {hasItems(profile.projects) && (
-            <Section title={labels.projects}>
+            <Section title={labels.projects} styles={styles}>
               {profile.projects?.map((item, index) => (
-                <NamedPDF key={index} item={item} />
+                <NamedPDF key={index} item={item} styles={styles} />
               ))}
             </Section>
           )}
           {hasItems(profile.education) && (
-            <Section title={labels.education}>
+            <Section title={labels.education} styles={styles}>
               {profile.education?.map((item, index) => (
-                <EducationPDF key={index} item={item} />
+                <EducationPDF key={index} item={item} styles={styles} />
               ))}
             </Section>
           )}
           {hasItems(profile.languages) && (
-            <Section title={labels.languages}>
+            <Section title={labels.languages} styles={styles}>
               <View style={styles.tagsContainer}>
                 {profile.languages?.map((language, index) => (
                   <Text key={index} style={styles.tag}>
@@ -385,9 +386,9 @@ function CVTemplateDocument({
             </Section>
           )}
           {hasItems(profile.certifications) && (
-            <Section title={labels.certifications}>
+            <Section title={labels.certifications} styles={styles}>
               {profile.certifications?.map((item, index) => (
-                <NamedPDF key={index} item={item} />
+                <NamedPDF key={index} item={item} styles={styles} />
               ))}
             </Section>
           )}

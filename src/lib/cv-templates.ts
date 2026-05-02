@@ -109,6 +109,24 @@ const loremProfile: StandardCVProfile = {
 
 export const CV_TEMPLATES: CVTemplateDefinition[] = [
   {
+    templateId: "executive",
+    name: "Executive",
+    description:
+      "A classic serif-based layout for senior roles and academic profiles.",
+    supportedSections: [
+      "basics",
+      "summary",
+      "experience",
+      "education",
+      "skills",
+      "languages",
+      "certifications",
+      "projects",
+    ],
+    locales: ["es", "en"],
+    fixtureProfile: loremProfile,
+  },
+  {
     templateId: "compact",
     name: "Linea",
     description:
