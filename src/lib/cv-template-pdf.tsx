@@ -404,17 +404,3 @@ export async function renderTemplatePDF(input: {
     />
   );
 }
-
-export async function renderTemplatePDF(input: {
-  profile: StandardCVProfile;
-  templateId: CVTemplateId;
-  locale: CVTemplateLocale;
-}): Promise<Buffer> {
-  return renderToBuffer(
-    <CVTemplateDocument
-      profile={input.profile}
-      templateId={input.templateId}
-      locale={input.locale}
-    />
-  );
-}
