@@ -37,7 +37,7 @@ export default function TemplatesView({
 }: TemplatesViewProps) {
   const [selectedCvId, setSelectedCvId] = useState(cvs[0]?.id ?? "");
   const [selectedTemplateId, setSelectedTemplateId] =
-    useState<CVTemplateId>("executive");
+    useState<CVTemplateId>("compact");
   const [locale, setLocale] = useState<CVTemplateLocale>("es");
   const [profile, setProfile] = useState<CVStructuredProfile | null>(null);
   const [generatingProfile, setGeneratingProfile] = useState(false);
