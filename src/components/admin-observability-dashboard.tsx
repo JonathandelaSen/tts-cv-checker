@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  Check,
   CheckCircle2,
   Clock3,
+  Copy,
   Filter,
   RefreshCw,
   Search,
@@ -56,11 +58,22 @@ export default function AdminObservabilityDashboard({
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.id === selectedId) ?? events[0] ?? null,
     [events, selectedId]
   );
+
+  const handleCopy = async (event: ProcessingEvent) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(event, null, 2));
+      setCopiedId(event.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   const timelineEvents = useMemo(() => {
     if (!selectedEvent) return [];
@@ -244,16 +257,35 @@ export default function AdminObservabilityDashboard({
             {selectedEvent ? (
               <div className="flex h-full min-h-0 flex-col">
                 <div className="shrink-0 border-b border-white/[0.06] p-5">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <StatusBadge status={selectedEvent.status} />
-                    <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-xs text-zinc-400">
-                      {selectedEvent.stage}
-                    </span>
-                    {selectedEvent.source && (
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={selectedEvent.status} />
                       <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-xs text-zinc-400">
-                        {selectedEvent.source}
+                        {selectedEvent.stage}
                       </span>
-                    )}
+                      {selectedEvent.source && (
+                        <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-xs text-zinc-400">
+                          {selectedEvent.source}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(selectedEvent)}
+                      className="inline-flex h-7 items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2 text-[11px] font-medium text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+                    >
+                      {copiedId === selectedEvent.id ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-400" />
+                          Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          Copiar JSON
+                        </>
+                      )}
+                    </button>
                   </div>
                   <div className="grid gap-3 text-xs text-zinc-500 md:grid-cols-2 xl:grid-cols-4">
                     <Metric label="Request" value={selectedEvent.request_id} />
@@ -275,9 +307,34 @@ export default function AdminObservabilityDashboard({
 
                 <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[1fr_340px]">
                   <div className="min-h-0 overflow-y-auto p-5">
-                    <h2 className="mb-4 text-sm font-semibold text-zinc-300">
-                      Timeline del intento
-                    </h2>
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                      <h2 className="text-sm font-semibold text-zinc-300">
+                        Timeline del intento
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            JSON.stringify(timelineEvents, null, 2)
+                          );
+                          setCopiedId("timeline");
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }}
+                        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2 text-[11px] font-medium text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+                      >
+                        {copiedId === "timeline" ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-400" />
+                            Flujo copiado
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            Copiar flujo
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <ol className="relative space-y-3 border-l border-white/[0.08] pl-4">
                       {timelineEvents.map((event) => (
                         <li key={event.id} className="relative">
@@ -303,7 +360,21 @@ export default function AdminObservabilityDashboard({
                                   {formatDateTime(event.created_at)}
                                 </p>
                               </div>
-                              <StatusBadge status={event.status} />
+                              <div className="flex shrink-0 items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(event)}
+                                  className="flex h-6 w-6 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.03] text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+                                  title="Copiar JSON del evento"
+                                >
+                                  {copiedId === event.id ? (
+                                    <Check className="h-3 w-3 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                                <StatusBadge status={event.status} />
+                              </div>
                             </div>
                             <div className="mt-3 grid gap-2 text-xs text-zinc-500 sm:grid-cols-3">
                               <span>
