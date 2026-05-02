@@ -52,6 +52,13 @@ const MAX_ERROR_LENGTH = 700;
 const MAX_METADATA_STRING_LENGTH = 300;
 const MAX_METADATA_DEPTH = 3;
 
+interface SupabaseErrorLike {
+  message?: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
 export function createRequestId(prefix = "req") {
   return `${prefix}_${crypto.randomUUID()}`;
 }
@@ -100,12 +107,16 @@ export async function recordProcessingEvent(input: ProcessingEventInput) {
     });
 
     if (error) {
+      const insertError = normalizeSupabaseError(error);
       console.error(
         JSON.stringify({
           event: "processing_event_insert_failed",
           request_id: event.requestId,
           stage: event.stage,
-          error: sanitizeErrorMessage(error.message),
+          error: insertError.message,
+          error_code: insertError.code,
+          error_details: insertError.details,
+          error_hint: insertError.hint,
         })
       );
     }
@@ -119,6 +130,15 @@ export async function recordProcessingEvent(input: ProcessingEventInput) {
       })
     );
   }
+}
+
+function normalizeSupabaseError(error: SupabaseErrorLike) {
+  return {
+    message: sanitizeErrorMessage(error.message ?? error),
+    code: error.code ? sanitizeErrorMessage(error.code) : null,
+    details: error.details ? sanitizeErrorMessage(error.details) : null,
+    hint: error.hint ? sanitizeErrorMessage(error.hint) : null,
+  };
 }
 
 export async function isAdminUser(userId: string) {

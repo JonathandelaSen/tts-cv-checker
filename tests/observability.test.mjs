@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const migrationSource = readFileSync(
@@ -9,6 +9,19 @@ const migrationSource = readFileSync(
   ),
   "utf8"
 );
+
+const allMigrationSources = readdirSync(
+  new URL("../supabase/migrations", import.meta.url)
+)
+  .filter((filename) => filename.endsWith(".sql"))
+  .sort()
+  .map((filename) =>
+    readFileSync(
+      new URL(`../supabase/migrations/${filename}`, import.meta.url),
+      "utf8"
+    )
+  )
+  .join("\n");
 
 const observabilitySource = readFileSync(
   new URL("../src/lib/observability.ts", import.meta.url),
@@ -45,10 +58,27 @@ test("observability migration creates admin and processing event tables with RLS
 test("processing event writes are best effort and sanitized", () => {
   assert.match(observabilitySource, /export async function recordProcessingEvent/);
   assert.match(observabilitySource, /catch \(error: unknown\)/);
+  assert.match(observabilitySource, /error_code/);
+  assert.match(observabilitySource, /error_details/);
   assert.match(observabilitySource, /redacted-api-key/);
   assert.match(observabilitySource, /api\.\?key\|authorization\|prompt/);
   assert.doesNotMatch(observabilitySource, /\|pdf\|/);
   assert.match(observabilitySource, /pdf\.\?buffer/);
+});
+
+test("processing events keep external correlation ids without strict entity foreign keys", () => {
+  assert.match(
+    allMigrationSources,
+    /drop constraint if exists processing_events_user_id_fkey/
+  );
+  assert.match(
+    allMigrationSources,
+    /drop constraint if exists processing_events_cv_id_fkey/
+  );
+  assert.match(
+    allMigrationSources,
+    /drop constraint if exists processing_events_analysis_id_fkey/
+  );
 });
 
 test("PDF extraction emits per-parser events and no-text aggregate signal", () => {
