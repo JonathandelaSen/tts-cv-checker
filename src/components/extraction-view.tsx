@@ -204,58 +204,65 @@ export default function ExtractionView({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header bar */}
-      <div className="shrink-0 px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+      <div className="shrink-0 px-4 sm:px-6 py-4 border-b border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0">
             <FileText className="w-4.5 h-4.5 text-indigo-400" />
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100">
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg font-semibold text-zinc-100 truncate">
               {analysis.filename}
             </h2>
-            <p className="text-xs text-zinc-500">
+            <p className="text-[10px] sm:text-xs text-zinc-500 truncate">
               Texto extraído con 3 parsers diferentes
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {analysis.id && (
             <>
               <button
                 onClick={() => setShowPdfPreview(!showPdfPreview)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all mr-1 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   showPdfPreview
                     ? "bg-indigo-500 text-white"
                     : "text-zinc-400 bg-zinc-800/60 hover:bg-zinc-800 hover:text-zinc-200"
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                {showPdfPreview ? "Cerrar PDF" : "Ver PDF Original"}
+                <span className="hidden xs:inline">
+                  {showPdfPreview ? "Cerrar PDF" : "Ver PDF Original"}
+                </span>
+                <span className="xs:hidden">
+                  {showPdfPreview ? "Cerrar" : "PDF"}
+                </span>
               </button>
               <a
                 href={`${pdfUrl}?download=1`}
                 download={analysis.filename}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all mr-2"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all"
                 title="Descargar PDF original"
               >
                 <Download className="w-3.5 h-3.5" />
-                Descargar
+                <span className="hidden xs:inline">Descargar</span>
               </a>
             </>
           )}
-          <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-1 rounded-md">
-            {wordCount.toLocaleString()} palabras
-          </span>
-          <span className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-1 rounded-md">
-            {charCount.toLocaleString()} caracteres
-          </span>
+          <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+            <span className="text-[10px] sm:text-xs text-zinc-500 bg-zinc-800/60 px-2 py-1 rounded-md whitespace-nowrap">
+              {wordCount.toLocaleString()} <span className="hidden xs:inline">palabras</span><span className="xs:hidden">w</span>
+            </span>
+            <span className="text-[10px] sm:text-xs text-zinc-500 bg-zinc-800/60 px-2 py-1 rounded-md whitespace-nowrap">
+              {charCount.toLocaleString()} <span className="hidden xs:inline">caracteres</span><span className="xs:hidden">ch</span>
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col overflow-auto p-6 gap-6">
+      <div className="flex-1 flex flex-col overflow-auto p-4 sm:p-6 gap-4 sm:gap-6">
         {/* Parser Tabs */}
-        <div className="shrink-0 flex gap-2">
+        <div className="shrink-0 flex flex-col xs:flex-row gap-2">
           {PARSERS.map((parser) => {
             const text = getTextForTab(parser.key);
             const error = getErrorForTab(parser.key);
@@ -267,7 +274,7 @@ export default function ExtractionView({
                 key={parser.key}
                 onClick={() => setActiveTab(parser.key)}
                 className={`
-                  flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all duration-200 text-left flex-1
+                  flex items-center gap-2.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-200 text-left flex-1
                   ${
                     activeTab === parser.key
                       ? "bg-white/[0.08] border border-white/[0.1] shadow-lg"
@@ -282,11 +289,11 @@ export default function ExtractionView({
                 />
                 <div className="min-w-0">
                   <p
-                    className={`text-sm font-medium truncate ${activeTab === parser.key ? "text-zinc-100" : "text-zinc-400"}`}
+                    className={`text-xs sm:text-sm font-medium truncate ${activeTab === parser.key ? "text-zinc-100" : "text-zinc-400"}`}
                   >
                     {parser.label}
                   </p>
-                  <p className="text-[11px] text-zinc-600 truncate">
+                  <p className="text-[10px] sm:text-[11px] text-zinc-600 truncate">
                     {hasError
                       ? "Error"
                       : hasContent
@@ -300,7 +307,7 @@ export default function ExtractionView({
         </div>
 
         {/* Text Content Area & PDF Preview Side-by-Side */}
-        <div className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 min-h-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -309,36 +316,36 @@ export default function ExtractionView({
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.15 }}
               className={`
-                flex-1 flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden
+                flex-1 flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden min-h-[300px] lg:min-h-0
                 ${fullscreen ? "fixed inset-4 z-50" : "relative"}
               `}
             >
               {/* Toolbar */}
-              <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-                <div className="flex items-center gap-2">
+              <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className={`w-2 h-2 rounded-full ${PARSERS.find((p) => p.key === activeTab)?.color}`}
+                    className={`w-2 h-2 rounded-full shrink-0 ${PARSERS.find((p) => p.key === activeTab)?.color}`}
                   />
-                  <span className="text-xs text-zinc-400 font-medium">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium truncate">
                     {PARSERS.find((p) => p.key === activeTab)?.description}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={handleCopy}
                     disabled={!currentText}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all disabled:opacity-30"
+                    className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all disabled:opacity-30"
                   >
                     {copied ? (
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
-                    {copied ? "Copiado" : "Copiar"}
+                    <span className="hidden xs:inline">{copied ? "Copiado" : "Copiar"}</span>
                   </button>
                   <button
                     onClick={() => setFullscreen(!fullscreen)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all"
+                    className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-all"
                   >
                     {fullscreen ? (
                       <Minimize2 className="w-3.5 h-3.5" />
@@ -350,7 +357,7 @@ export default function ExtractionView({
               </div>
 
               {/* Text */}
-              <div className="flex-1 overflow-auto p-5">
+              <div className="flex-1 overflow-auto p-4 sm:p-5">
                 {currentError && !currentText ? (
                   <div className="flex items-start gap-3 text-rose-300">
                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -358,19 +365,19 @@ export default function ExtractionView({
                       <p className="font-medium text-sm">
                         Error en la extracción
                       </p>
-                      <p className="text-xs text-rose-400/70 mt-1 font-mono">
+                      <p className="text-xs text-rose-400/70 mt-1 font-mono break-all">
                         {currentError}
                       </p>
                     </div>
                   </div>
                 ) : currentText ? (
-                  <pre className="text-sm text-zinc-300 font-mono whitespace-pre-wrap leading-relaxed">
+                  <pre className="text-xs sm:text-sm text-zinc-300 font-mono whitespace-pre-wrap leading-relaxed">
                     {currentText}
                   </pre>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-600">
-                    <FileText className="w-10 h-10 mb-3 opacity-30" />
-                    <p className="text-sm">
+                  <div className="flex flex-col items-center justify-center h-full py-10 text-zinc-600">
+                    <FileText className="w-8 h-8 sm:w-10 sm:h-10 mb-3 opacity-30" />
+                    <p className="text-xs sm:text-sm text-center px-4">
                       Este parser no produjo texto para este PDF
                     </p>
                   </div>
@@ -383,10 +390,10 @@ export default function ExtractionView({
           <AnimatePresence>
             {showPdfPreview && !fullscreen && (
               <motion.div
-                initial={{ opacity: 0, width: 0, x: 20 }}
-                animate={{ opacity: 1, width: "50%", x: 0 }}
-                exit={{ opacity: 0, width: 0, x: 20 }}
-                className="flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden shadow-2xl"
+                initial={{ opacity: 0, height: 0, lg: { width: 0, height: "auto" } }}
+                animate={{ opacity: 1, height: 400, lg: { width: "50%", height: "auto" } }}
+                exit={{ opacity: 0, height: 0, lg: { width: 0, height: "auto" } }}
+                className="flex flex-col rounded-2xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden shadow-2xl min-h-[400px] lg:min-h-0"
               >
                 <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-indigo-500/5">
                   <div className="flex items-center gap-2">

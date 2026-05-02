@@ -87,7 +87,7 @@ export default function GeneralAnalysisForm({
       </div>
 
       {/* Footer: Model selector + Submit */}
-      <div className="flex items-end gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4">
         {/* Model selector */}
         <div className="flex-1">
           <label className="flex items-center gap-2 text-sm text-zinc-400 mb-1.5">
@@ -118,7 +118,7 @@ export default function GeneralAnalysisForm({
         <button
           onClick={handleSubmit}
           disabled={loading || !hasGeminiApiKey}
-          className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-xl shadow-violet-900/30 transition-all active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed h-fit shrink-0"
+          className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-xl shadow-violet-900/30 transition-all active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed h-fit shrink-0 w-full sm:w-auto"
         >
           {loading ? (
             <>

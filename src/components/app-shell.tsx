@@ -366,11 +366,11 @@ export default function AppShell({
             >
               {/* Tabs - Extraction / Analysis */}
               {activeAnalysis.ai_score !== null && (
-                <div className="shrink-0 flex items-center gap-1 px-6 pt-4">
+                <div className="shrink-0 flex items-center gap-1 px-4 sm:px-6 pt-4">
                   <button
                     onClick={() => setViewTab("extraction")}
                     className={`
-                      flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all
                       ${
                         viewTab === "extraction"
                           ? "bg-white/[0.08] text-zinc-100 shadow-sm"
@@ -378,13 +378,13 @@ export default function AppShell({
                       }
                     `}
                   >
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Extracción
                   </button>
                   <button
                     onClick={() => setViewTab("analysis")}
                     className={`
-                      flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all
                       ${
                         viewTab === "analysis"
                           ? "bg-white/[0.08] text-zinc-100 shadow-sm"
@@ -392,7 +392,7 @@ export default function AppShell({
                       }
                     `}
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     Análisis IA
                   </button>
                 </div>
