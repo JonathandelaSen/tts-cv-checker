@@ -10,7 +10,9 @@
     "parser:dev": "docker compose up pdf-parser",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:sync-email-template": "node scripts/sync-supabase-email-template.mjs"
+    "supabase:sync-email-template": "node scripts/sync-supabase-email-template.mjs",
+    "supabase:migrate:local": "supabase migration up",
+    "supabase:migrate:prod": "supabase db push"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
