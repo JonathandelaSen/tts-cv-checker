@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  CV_PDFS_BUCKET,
   createAnalysis,
   deleteAnalysis,
   getCV,
   listAnalyses,
+  updateCVExtraction,
+  type CVRecord,
   type AIContext,
   type AnalysisMode,
 } from "@/lib/db";
 import { scoreCVWithAI } from "@/lib/ai-scoring";
 import { getErrorMessage } from "@/lib/errors";
+import { extractPdfText } from "@/lib/pdf-extraction";
 import {
   createRequestId,
   getErrorCode,
+  hasExtractedText,
   recordProcessingEvent,
   sanitizeErrorMessage,
 } from "@/lib/observability";
@@ -24,6 +29,48 @@ async function getAuthedSupabase() {
   } = await supabase.auth.getUser();
 
   return { supabase, user };
+}
+
+async function retryCVExtraction(input: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  cv: CVRecord;
+  userId: string;
+  requestId: string;
+}) {
+  if (
+    hasExtractedText([
+      input.cv.text_python,
+      input.cv.text_pdfjs,
+      input.cv.text_node,
+    ]) ||
+    !input.cv.pdf_storage_path
+  ) {
+    return input.cv;
+  }
+
+  const { data, error } = await input.supabase.storage
+    .from(CV_PDFS_BUCKET)
+    .download(input.cv.pdf_storage_path);
+
+  if (error) throw error;
+
+  const extracted = await extractPdfText(Buffer.from(await data.arrayBuffer()), {
+    userId: input.userId,
+    cvId: input.cv.id,
+    requestId: input.requestId,
+    fileSize: input.cv.file_size,
+    filename: input.cv.filename,
+    pdfStoragePath: input.cv.pdf_storage_path,
+  });
+
+  return (
+    (await updateCVExtraction(
+      input.supabase,
+      input.cv.id,
+      input.userId,
+      extracted
+    )) ?? input.cv
+  );
 }
 
 export async function GET() {
@@ -96,10 +143,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cv = await getCV(supabase, cvId, user.id);
+    let cv = await getCV(supabase, cvId, user.id);
     if (!cv) {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
+
+    cv = await retryCVExtraction({
+      supabase,
+      cv,
+      userId: user.id,
+      requestId,
+    });
 
     const text = cv.text_python || cv.text_pdfjs || cv.text_node;
     if (!text) {

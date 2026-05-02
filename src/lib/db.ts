@@ -207,6 +207,24 @@ export async function updateCVName(
   return (data as CVRecord | null) ?? null;
 }
 
+export async function updateCVExtraction(
+  supabase: SupabaseClient,
+  id: string,
+  userId: string,
+  extracted: ExtractedPdfText
+): Promise<CVRecord | null> {
+  const { data, error } = await supabase
+    .from("cvs")
+    .update(extracted)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as CVRecord | null) ?? null;
+}
+
 export async function listAnalysesForCV(
   supabase: SupabaseClient,
   cvId: string,

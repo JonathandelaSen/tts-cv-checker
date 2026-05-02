@@ -105,3 +105,17 @@ test("analysis routes record no-text preflight events before returning 400", () 
     );
   }
 });
+
+test("new analysis retries extraction for existing CVs before no-text preflight failure", () => {
+  const retryIndex = analysesRouteSource.indexOf("retryCVExtraction");
+  const errorIndex = analysesRouteSource.indexOf("No extracted text available");
+
+  assert.notEqual(retryIndex, -1);
+  assert.notEqual(errorIndex, -1);
+  assert.ok(
+    retryIndex < errorIndex,
+    "existing CVs without stored text should be re-extracted before returning 400"
+  );
+  assert.match(analysesRouteSource, /extractPdfText/);
+  assert.match(analysesRouteSource, /updateCVExtraction/);
+});
