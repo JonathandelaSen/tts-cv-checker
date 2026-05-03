@@ -480,6 +480,7 @@ export default function AppShell({
                         title: activeAnalysis.title,
                         filename: activeAnalysis.filename,
                       }}
+                      onDelete={handleDelete}
                     />
                   </motion.div>
                 ) : null}

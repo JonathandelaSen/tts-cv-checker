@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -14,6 +15,8 @@ import {
   ExternalLink,
   ListChecks,
   XCircle,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import type { AnalysisMode, AIContext, JobKeyData } from "@/lib/db";
 
@@ -44,6 +47,7 @@ interface AIAnalysisViewProps {
     title: string;
     filename: string;
   };
+  onDelete?: (id: string) => Promise<void>;
 }
 
 function safeParseArray(value: string | null): string[] {
@@ -66,7 +70,8 @@ function safeParseJobKeyData(value: string | null): JobKeyData | null {
   }
 }
 
-export default function AIAnalysisView({ analysis }: AIAnalysisViewProps) {
+export default function AIAnalysisView({ analysis, onDelete }: AIAnalysisViewProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const keywords = safeParseArray(analysis.ai_keywords);
   const improvements = safeParseArray(analysis.ai_improvements);
   const jobKeywords = safeParseArray(analysis.job_keywords);
@@ -149,6 +154,23 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    if (!confirm("¿Seguro que quieres borrar este análisis? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await onDelete(analysis.id);
+    } catch (error) {
+      console.error("Error deleting analysis:", error);
+      alert("No se pudo borrar el análisis.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -264,10 +286,22 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
                 )}
                 <button
                   onClick={handleExport}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 px-2.5 py-1 rounded-md transition-all ml-auto"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 px-2.5 py-1 rounded-md transition-all"
                 >
-                  <FileDown className="w-3 h-3" />
+                  <FileDown className="w-3.5 h-3.5" />
                   Exportar Informe
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-2.5 py-1 rounded-md transition-all disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  {isDeleting ? "Borrando..." : "Eliminar"}
                 </button>
               </div>
             </div>
