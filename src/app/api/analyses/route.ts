@@ -10,7 +10,6 @@ import {
   type AIContext,
   type AnalysisMode,
 } from "@/lib/db";
-import { scoreCVWithAI } from "@/lib/ai-scoring";
 import { getErrorMessage } from "@/lib/errors";
 import { extractPdfText } from "@/lib/pdf-extraction";
 import {
@@ -107,7 +106,6 @@ export async function POST(req: NextRequest) {
       jobUrl,
       context,
       model = "gemini-2.5-flash",
-      geminiApiKey,
     } = (await req.json()) as {
       cvId?: string;
       title?: string;
@@ -116,7 +114,6 @@ export async function POST(req: NextRequest) {
       jobUrl?: string;
       context?: AIContext;
       model?: string;
-      geminiApiKey?: string;
     };
 
     const trimmedTitle = title?.trim();
@@ -133,16 +130,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!geminiApiKey?.trim()) {
-      return NextResponse.json(
-        {
-          error:
-            "Configura tu API key de Gemini en Configuración antes de lanzar el análisis.",
-        },
-        { status: 400 }
-      );
-    }
-
     let cv = await getCV(supabase, cvId, user.id);
     if (!cv) {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
@@ -184,22 +171,6 @@ export async function POST(req: NextRequest) {
     }
 
     analysisIdForEvents = crypto.randomUUID();
-    const result = await scoreCVWithAI({
-      apiKey: geminiApiKey.trim(),
-      mode,
-      text,
-      model,
-      context: mode === "general" ? (context ?? null) : null,
-      jobDescription: mode === "job_match" ? jobDescription : null,
-      jobUrl: mode === "job_match" ? jobUrl : null,
-      observability: {
-        userId,
-        cvId,
-        analysisId: analysisIdForEvents,
-        requestId,
-      },
-    });
-
     const persistStartedAt = performance.now();
     await recordProcessingEvent({
       userId,
@@ -234,15 +205,15 @@ export async function POST(req: NextRequest) {
       job_description: mode === "job_match" ? jobDescription?.trim() ?? null : null,
       job_url: mode === "job_match" ? jobUrl?.trim() || null : null,
       ai_context: mode === "general" ? (context ?? null) : null,
-      ai_score: result.score,
-      ai_feedback: result.feedback,
-      ai_keywords: result.keywordsFound,
-      ai_improvements: result.improvements,
-      job_key_data: result.jobKeyData,
-      job_keywords: result.jobKeywords,
-      cv_keywords: result.cvKeywords,
-      matching_keywords: result.matchingKeywords,
-      missing_keywords: result.missingKeywords,
+      ai_score: null,
+      ai_feedback: null,
+      ai_keywords: null,
+      ai_improvements: null,
+      job_key_data: null,
+      job_keywords: [],
+      cv_keywords: [],
+      matching_keywords: [],
+      missing_keywords: [],
     });
 
     await recordProcessingEvent({

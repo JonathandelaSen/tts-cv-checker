@@ -43,6 +43,16 @@ const scoreRouteSource = readFileSync(
   "utf8"
 );
 
+const aiScoringSource = readFileSync(
+  new URL("../src/lib/ai-scoring.ts", import.meta.url),
+  "utf8"
+);
+
+const newAnalysisFlowSource = readFileSync(
+  new URL("../src/components/new-analysis-flow.tsx", import.meta.url),
+  "utf8"
+);
+
 test("observability migration creates admin and processing event tables with RLS", () => {
   assert.match(migrationSource, /create table public\.admin_users/);
   assert.match(migrationSource, /create table public\.processing_events/);
@@ -92,6 +102,14 @@ test("PDF extraction emits per-parser events and no-text aggregate signal", () =
   assert.match(pdfExtractionSource, /nodeErrorMessage/);
 });
 
+test("Node PDF parsers run in-process instead of child Node scripts", () => {
+  assert.doesNotMatch(pdfExtractionSource, /execFile/);
+  assert.doesNotMatch(pdfExtractionSource, /node_parser\.js/);
+  assert.doesNotMatch(pdfExtractionSource, /node_pdfjs_parser\.mjs/);
+  assert.match(pdfExtractionSource, /extractWithPdfParse/);
+  assert.match(pdfExtractionSource, /extractWithPdfjs/);
+});
+
 test("analysis routes record no-text preflight events before returning 400", () => {
   for (const source of [analysesRouteSource, scoreRouteSource]) {
     const errorIndex = source.indexOf("No extracted text available");
@@ -118,4 +136,22 @@ test("new analysis retries extraction for existing CVs before no-text preflight 
   );
   assert.match(analysesRouteSource, /extractPdfText/);
   assert.match(analysesRouteSource, /updateCVExtraction/);
+});
+
+test("new analysis creation is extraction-only and never spends AI tokens", () => {
+  assert.doesNotMatch(analysesRouteSource, /scoreCVWithAI/);
+  assert.doesNotMatch(analysesRouteSource, /stage: "ai_analysis"/);
+  assert.doesNotMatch(analysesRouteSource, /google_gemini/);
+  assert.match(scoreRouteSource, /scoreCVWithAI/);
+  assert.match(aiScoringSource, /stage: "ai_analysis"/);
+  assert.match(aiScoringSource, /google_gemini/);
+});
+
+test("new analysis flow can create an extraction without a Gemini API key", () => {
+  assert.doesNotMatch(
+    newAnalysisFlowSource,
+    /Configura tu API key de Gemini antes de lanzar el análisis/
+  );
+  assert.doesNotMatch(newAnalysisFlowSource, /disabled=\{loading \|\| !hasGeminiApiKey\}/);
+  assert.match(newAnalysisFlowSource, /Crear extracción/);
 });

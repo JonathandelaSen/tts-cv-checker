@@ -373,14 +373,14 @@ export interface CreateAnalysisInput {
   extract_error_pdfjs: string | null;
   extract_error_node: string | null;
   analysis_mode: AnalysisMode;
-  ai_model: string;
+  ai_model: string | null;
   job_description: string | null;
   job_url: string | null;
   ai_context: AIContext | null;
-  ai_score: number;
-  ai_feedback: string;
-  ai_keywords: string[];
-  ai_improvements: string[];
+  ai_score: number | null;
+  ai_feedback: string | null;
+  ai_keywords: string[] | null;
+  ai_improvements: string[] | null;
   job_key_data?: JobKeyData | null;
   job_keywords?: string[];
   cv_keywords?: string[];
@@ -401,7 +401,8 @@ export async function createAnalysis(
       cv_keywords: data.cv_keywords ?? [],
       matching_keywords: data.matching_keywords ?? [],
       missing_keywords: data.missing_keywords ?? [],
-      ai_analyzed_at: new Date().toISOString(),
+      ai_analyzed_at:
+        typeof data.ai_score === "number" ? new Date().toISOString() : null,
     })
     .select("*")
     .single();

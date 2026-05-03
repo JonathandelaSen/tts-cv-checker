@@ -315,9 +315,6 @@ export default function AppShell({
                 cvs={cvs}
                 onCVCreated={fetchCVs}
                 onAnalysisCreated={handleAnalysisCreated}
-                geminiApiKey={geminiApiKey}
-                hasGeminiApiKey={geminiApiKey.length > 0}
-                onOpenSettings={handleOpenSettings}
               />
             </motion.div>
           ) : activeView === "cvs" ? (
