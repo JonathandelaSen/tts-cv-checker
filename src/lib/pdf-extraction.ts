@@ -3,6 +3,14 @@ import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
+
+// Dummy imports to ensure these packages are included in the Vercel bundle
+// since they are only used via child_process and otherwise might be pruned.
+// @ts-ignore
+import * as _pdfParse from "pdf-parse";
+// @ts-ignore
+import * as _pdfjs from "pdfjs-dist";
+
 import { getErrorMessage } from "@/lib/errors";
 import {
   getErrorCode,
