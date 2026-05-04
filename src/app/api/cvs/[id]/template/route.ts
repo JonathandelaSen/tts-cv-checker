@@ -103,11 +103,12 @@ export async function POST(
 
     return NextResponse.json({ version, profile });
   } catch (error: unknown) {
-    console.error("Template selection error:", error);
+    const message = getErrorMessage(error);
+    console.error("Template selection error:", message, error);
     return NextResponse.json(
       {
-        error: "Failed to select CV template",
-        details: getErrorMessage(error),
+        error: message || "Failed to select CV template",
+        details: message,
       },
       { status: 500 }
     );

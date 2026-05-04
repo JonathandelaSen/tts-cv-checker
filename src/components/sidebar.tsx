@@ -55,6 +55,7 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   userEmail: string | null;
   isAdmin?: boolean;
+  isForceCollapsed?: boolean;
 }
 
 export default function Sidebar({
@@ -71,9 +72,17 @@ export default function Sidebar({
   onDelete,
   userEmail,
   isAdmin = false,
+  isForceCollapsed = false,
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const collapsed = isForceCollapsed || internalCollapsed;
+
+  const setCollapsed = (val: boolean) => {
+    if (isForceCollapsed) return;
+    setInternalCollapsed(val);
+  };
 
   useEffect(() => {
     const checkMobile = () => {

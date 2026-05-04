@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Cpu,
   Download,
   FileText,
@@ -10,9 +13,16 @@ import {
   LayoutTemplate,
   Lightbulb,
   Loader2,
-  MessageSquareText,
+  Maximize2,
+  Minimize2,
+  Minus,
+  Plus,
+  RotateCcw,
+  Search,
+  Settings,
   Sparkles,
   Wand2,
+  X,
 } from "lucide-react";
 import type {
   CVRecommendationAnalysis,
@@ -21,6 +31,7 @@ import type {
 import { getCVTemplate, type CVTemplateLocale } from "@/lib/cv-templates";
 import { getErrorMessage } from "@/lib/errors";
 import CVTemplatePreview from "@/components/cv-template-preview";
+import { Button } from "@/components/ui/button";
 
 interface CVEditorViewProps {
   cvVersions: CVTemplateVersion[];
@@ -32,6 +43,7 @@ interface CVEditorViewProps {
   onOpenSettings: () => void;
   onStartAnalysis: () => void;
   onCVUpdated: () => void;
+  onBackToLibrary?: () => void;
 }
 
 function safeParseArray(value: string | null | undefined): string[] {
@@ -55,107 +67,100 @@ export default function CVEditorView({
   onOpenSettings,
   onStartAnalysis,
   onCVUpdated,
+  onBackToLibrary,
 }: CVEditorViewProps) {
-  const initialCv = useMemo(
-    () =>
-      cvVersions.find((version) => version.id === activeVersionId) ??
-      cvVersions[0] ??
-      null,
-    [activeVersionId, cvVersions]
-  );
-  const [manuallySelectedCvId, setManuallySelectedCvId] = useState<
-    string | null
-  >(null);
-  const [editedVersion, setEditedVersion] = useState<CVTemplateVersion | null>(
-    null
-  );
-  const [recommendationAnalysis, setRecommendationAnalysis] =
-    useState<CVRecommendationAnalysis | null>(null);
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [zoom, setZoom] = useState(0.85);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isSavingModalOpen, setIsSavingModalOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [savingAsCv, setSavingAsCv] = useState(false);
+  const [manuallySelectedVersionId, setManuallySelectedVersionId] = useState<string | null>(null);
+  const [editedVersion, setEditedVersion] = useState<CVTemplateVersion | null>(null);
+  const [recommendationAnalysis, setRecommendationAnalysis] = useState<CVRecommendationAnalysis | null>(null);
+  const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
   const [editInstruction, setEditInstruction] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingLocale, setSavingLocale] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedVersionId =
-    manuallySelectedCvId ?? activeVersionId ?? initialCv?.id ?? "";
+  const currentVersionId = manuallySelectedVersionId ?? activeVersionId ?? cvVersions[0]?.id;
+  const currentVersionFromList = useMemo(() => 
+    cvVersions.find(v => v.id === currentVersionId) ?? cvVersions[0] ?? null
+  , [cvVersions, currentVersionId]);
 
-  const selectedVersion = useMemo(
-    () =>
-      cvVersions.find((version) => version.id === selectedVersionId) ??
-      initialCv,
-    [cvVersions, initialCv, selectedVersionId]
-  );
-  const activeTemplate = selectedVersion?.template_id
-    ? getCVTemplate(selectedVersion.template_id)
-    : null;
-  const locale = selectedVersion?.template_locale ?? "es";
-
-  const currentVersion =
-    editedVersion?.id === selectedVersion?.id ? editedVersion : selectedVersion;
+  const currentVersion = editedVersion?.id === currentVersionFromList?.id ? editedVersion : currentVersionFromList;
+  const activeTemplate = currentVersion?.template_id ? getCVTemplate(currentVersion.template_id) : null;
+  const locale = currentVersion?.template_locale ?? "es";
 
   useEffect(() => {
-    if (!selectedVersion?.source_cv_id) return;
+    if (!currentVersion?.source_cv_id) return;
 
     let cancelled = false;
-    fetch(`/api/cvs/${selectedVersion.source_cv_id}/recommendations`)
-        .then(async (res) => {
-          const data = await res.json();
-          if (!res.ok) return null;
-          return data.analysis ?? null;
-        })
-        .then((nextRecommendation) => {
+    fetch(`/api/cvs/${currentVersion.source_cv_id}/recommendations`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) return null;
+        return data.analysis ?? null;
+      })
+      .then((nextRecommendation) => {
         if (cancelled) return;
-        setError(null);
         setRecommendationAnalysis(nextRecommendation);
       })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(getErrorMessage(err));
+      .catch(() => {
+        // silent error for recommendations
       });
 
     return () => {
       cancelled = true;
     };
-  }, [selectedVersion?.source_cv_id]);
+  }, [currentVersion?.source_cv_id]);
 
-  const currentProfile = currentVersion?.profile ?? null;
+  const handleSaveAsCV = async () => {
+    if (!currentVersion?.id || !saveName.trim()) return;
+    setSavingAsCv(true);
+    try {
+      const res = await fetch(`/api/cv-template-versions/${currentVersion.id}/save-as-cv`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: saveName.trim() }),
+      });
+      if (!res.ok) throw new Error("Error al guardar como CV");
+      setIsSavingModalOpen(false);
+      onCVUpdated();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSavingAsCv(false);
+    }
+  };
 
   const applyInstruction = async (instruction = editInstruction) => {
-    if (!currentVersion?.id || !currentProfile) {
-      setError("Selecciona una plantilla antes de editar el CV.");
-      return;
-    }
+    if (!currentVersion?.id) return;
     if (!hasGeminiApiKey) {
-      setError("Configura tu API key de Gemini antes de editar el CV.");
+      setError("Configura tu API key de Gemini antes de editar.");
       return;
     }
-    if (!instruction.trim()) {
-      setError("Escribe una petición para la IA.");
-      return;
-    }
+    if (!instruction.trim()) return;
 
     setEditingProfile(true);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/cv-template-versions/${currentVersion.id}/edit`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            geminiApiKey,
-            model: selectedModel,
-            instruction: instruction.trim(),
-          }),
-        }
-      );
+      const res = await fetch(`/api/cv-template-versions/${currentVersion.id}/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          geminiApiKey,
+          model: selectedModel,
+          instruction: instruction.trim(),
+        }),
+      });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || data.details || "No se pudo editar el CV");
       }
       setEditedVersion(data.version);
       setEditInstruction("");
+      onCVUpdated();
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -171,14 +176,10 @@ export default function CVEditorView({
       const res = await fetch(`/api/cv-template-versions/${currentVersion.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          template_locale: nextLocale,
-        }),
+        body: JSON.stringify({ template_locale: nextLocale }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || data.details || "No se pudo cambiar idioma");
-      }
+      if (!res.ok) throw new Error(data.error || "No se pudo cambiar idioma");
       setEditedVersion(data.version);
       onCVUpdated();
     } catch (err: unknown) {
@@ -188,308 +189,347 @@ export default function CVEditorView({
     }
   };
 
-  const currentRecommendation =
-    recommendationAnalysis?.cv_id === currentVersion?.source_cv_id
-      ? recommendationAnalysis
-      : null;
-  const improvements = safeParseArray(currentRecommendation?.ai_improvements);
-  const missingKeywords = safeParseArray(currentRecommendation?.missing_keywords);
-
-  if (!selectedVersion) {
+  if (!currentVersion || !activeTemplate) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6 text-center">
-        <div>
-          <FileText className="mx-auto mb-3 h-8 w-8 text-zinc-600" />
-          <p className="text-sm text-zinc-500">
-            {hasOriginalCVs
-              ? "Selecciona una plantilla para crear tu primera versión editable."
-              : "Sube un CV para empezar."}
-          </p>
-          {hasOriginalCVs && (
-            <button
-              type="button"
-              onClick={onOpenTemplates}
-              className="mt-4 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
-            >
-              Elegir plantilla
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (!activeTemplate) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6 text-center">
+      <div className="flex h-full w-full flex-col items-center justify-center bg-[#050509] p-10 text-center">
         <div className="max-w-md">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 text-teal-300">
-            <LayoutTemplate className="h-6 w-6" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-400">
+            <LayoutTemplate className="h-8 w-8" />
           </div>
-          <h1 className="text-xl font-bold text-zinc-100">
-            Selecciona una plantilla para editar
-          </h1>
-          <p className="mt-2 text-sm text-zinc-500">
-            El editor trabaja sobre una versión estructurada asociada a una
-            plantilla. Tu PDF original seguirá intacto.
+          <h2 className="text-2xl font-bold text-white">No hay versión activa</h2>
+          <p className="mt-4 text-zinc-500">
+            Para editar un CV, primero debes seleccionar una plantilla y crear una versión editable.
           </p>
-          <button
-            type="button"
-            onClick={onOpenTemplates}
-            className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-teal-500 px-4 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            Elegir plantilla
-          </button>
+          <Button onClick={onOpenTemplates} className="mt-8 bg-teal-500 text-black hover:bg-teal-400">
+            Ir al catálogo de plantillas
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-hidden p-6 md:p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="mx-auto grid h-full w-full max-w-7xl gap-6 xl:grid-cols-[430px_1fr]"
-      >
-        <section className="min-h-0 overflow-y-auto rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300">
-              <Wand2 className="h-3.5 w-3.5" />
-              Editor IA
+    <div className="flex h-full w-full flex-col overflow-hidden bg-[#050509]">
+      {/* Topbar */}
+      <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-white/5 bg-[#0a0a12]/80 px-4 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={onBackToLibrary} className="h-8 w-8 text-zinc-400">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="h-4 w-[1px] bg-white/10" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="truncate text-sm font-semibold text-white">{currentVersion.name}</h2>
+              <span className="text-[10px] text-zinc-600">basado en</span>
+              <span className="truncate text-[11px] font-medium text-teal-500/80 italic">
+                {currentVersion.source_cv?.name || "CV Original"}
+              </span>
             </div>
-            <h1 className="mt-3 text-2xl font-bold text-zinc-100">
-              Edita la versión actual
-            </h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              El original subido se conserva. Aquí modificas la versión
-              estructurada que se exporta con la plantilla.
-            </p>
+            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+              <span className="rounded-full bg-white/5 px-1.5 py-0.5 uppercase tracking-wider">{activeTemplate.name}</span>
+              <span className="rounded-full bg-white/5 px-1.5 py-0.5 uppercase tracking-wider">{locale}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => {
+              setSaveName(`${currentVersion.name} (Editado)`);
+              setIsSavingModalOpen(true);
+            }}
+            variant="ghost"
+            className="h-9 gap-2 border border-teal-500/20 bg-teal-500/5 text-xs text-teal-400 hover:bg-teal-500/10"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Guardar en Mis CVs</span>
+          </Button>
+
+          <div className="hidden h-4 w-[1px] bg-white/10 md:block" />
+
+          {/* Zoom Controls */}
+          <div className="hidden items-center gap-1 rounded-lg border border-white/5 bg-white/5 p-1 md:flex">
+            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(0.4, zoom - 0.1))} className="h-7 w-7 text-zinc-400">
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
+            <span className="min-w-[40px] text-center text-[11px] font-medium text-zinc-400">{Math.round(zoom * 100)}%</span>
+            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(1.5, zoom + 0.1))} className="h-7 w-7 text-zinc-400">
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setZoom(0.85)} className="ml-1 h-7 w-7 text-zinc-500">
+              <RotateCcw className="h-3 w-3" />
+            </Button>
           </div>
 
-          {error && (
-            <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-              {error}
-            </div>
-          )}
+          <div className="hidden h-4 w-[1px] bg-white/10 md:block" />
 
-          <div className="mt-5 space-y-4">
-            <label className="block text-sm text-zinc-400">
-              <span className="mb-2 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                CV actual
-              </span>
-              <select
-                value={selectedVersion.id}
-                onChange={(event) => setManuallySelectedCvId(event.target.value)}
-                className="h-11 w-full rounded-xl border border-white/[0.06] bg-[#0a0a12] px-4 text-sm text-zinc-200 focus:border-teal-500/40 focus:outline-none"
-              >
-                {cvVersions.map((version) => (
-                  <option key={version.id} value={version.id}>
-                    {version.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <Button
+            asChild
+            variant="ghost"
+            className="h-9 gap-2 border border-white/5 bg-white/5 text-xs text-white hover:bg-white/10"
+          >
+            <a href={`/api/cv-template-versions/${currentVersion.id}/pdf`}>
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Descargar PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </a>
+          </Button>
 
-            <div className="rounded-xl border border-white/[0.06] bg-[#0a0a12]/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                Plantilla activa
-              </p>
-              <p className="mt-1 text-sm font-semibold text-zinc-100">
-                {activeTemplate.name}
-              </p>
-              <button
-                type="button"
-                onClick={onOpenTemplates}
-                className="mt-2 text-xs font-semibold text-teal-300 hover:text-teal-200"
-              >
-                Cambiar plantilla
-              </button>
-            </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            className={`h-9 w-9 transition-colors ${isPanelOpen ? "text-teal-400" : "text-zinc-500"}`}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
 
-            <label className="block text-sm text-zinc-400">
-              <span className="mb-2 flex items-center gap-2">
-                <Cpu className="h-4 w-4" />
-                Modelo de IA
-              </span>
-              <select
-                value={selectedModel}
-                onChange={(event) => setSelectedModel(event.target.value)}
-                className="h-10 w-full rounded-xl border border-white/[0.06] bg-[#0a0a12] px-4 text-sm text-zinc-200 focus:border-teal-500/40 focus:outline-none"
-              >
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                <option value="gemini-3.1-pro-preview">
-                  Gemini 3.1 Pro Preview
-                </option>
-              </select>
-            </label>
-
-            <label className="block text-sm text-zinc-400">
-              <span className="mb-2 flex items-center gap-2">
-                <MessageSquareText className="h-4 w-4" />
-                Petición para la IA
-              </span>
-              <textarea
-                value={editInstruction}
-                onChange={(event) => setEditInstruction(event.target.value)}
-                placeholder="Ej: Acorta mi Sobre mí a 3 líneas y hazlo más directo."
-                className="h-32 w-full resize-none rounded-xl border border-white/[0.06] bg-[#0a0a12] px-4 py-3 text-sm text-zinc-300 placeholder:text-zinc-600 focus:border-teal-500/40 focus:outline-none"
-              />
-            </label>
-
-            <div className="flex flex-wrap gap-2">
-              {[
-                "Acorta el Sobre mí manteniendo el tono profesional.",
-                "Mejora la claridad y elimina repeticiones.",
-                "Adapta el contenido usando las recomendaciones disponibles.",
-              ].map((instruction) => (
-                <button
-                  key={instruction}
-                  type="button"
-                  onClick={() => {
-                    setEditInstruction(instruction);
-                    void applyInstruction(instruction);
-                  }}
-                  disabled={editingProfile || !hasGeminiApiKey || !currentProfile}
-                  className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {instruction.split(".")[0]}
-                </button>
-              ))}
-            </div>
-
-            {!hasGeminiApiKey ? (
-              <button
-                type="button"
-                onClick={onOpenSettings}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-zinc-100 px-4 text-sm font-semibold text-zinc-950 hover:bg-white"
-              >
-                <KeyRound className="h-4 w-4" />
-                Configurar API key
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => applyInstruction()}
-                disabled={
-                  editingProfile || !editInstruction.trim() || !currentProfile
-                }
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {editingProfile ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Canvas */}
+        <div className="relative flex-1 overflow-auto bg-[#050509] scrollbar-thin">
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+               style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+          
+          <div className="flex min-h-full min-w-full items-center justify-center p-10 md:p-20">
+            <motion.div
+              style={{ scale: zoom }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="relative shadow-[0_0_80px_rgba(0,0,0,0.5)] origin-center"
+            >
+              <div className="w-[820px] overflow-hidden rounded-sm bg-white ring-1 ring-white/10">
+                {currentVersion.profile ? (
+                  <CVTemplatePreview
+                    profile={currentVersion.profile}
+                    templateId={activeTemplate.templateId}
+                    locale={locale}
+                  />
                 ) : (
-                  <Wand2 className="h-4 w-4" />
-                )}
-                Aplicar cambios
-              </button>
-            )}
-          </div>
-
-          <section className="mt-5 rounded-xl border border-white/[0.06] bg-[#0a0a12]/70 p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
-                <Lightbulb className="h-4 w-4 text-amber-300" />
-                Recomendaciones
-              </div>
-              {currentRecommendation?.ai_score !== null &&
-                currentRecommendation?.ai_score !== undefined && (
-                  <span className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-300">
-                    {currentRecommendation.ai_score}/100
-                  </span>
-                )}
-            </div>
-            {currentRecommendation ? (
-              <div className="space-y-3">
-                {improvements.slice(0, 4).map((item, index) => (
-                  <p key={`${item}-${index}`} className="text-sm text-zinc-400">
-                    {item}
-                  </p>
-                ))}
-                {missingKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {missingKeywords.slice(0, 8).map((keyword) => (
-                      <span
-                        key={keyword}
-                        className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-2 py-1 text-xs text-rose-300"
-                      >
-                        {keyword}
-                      </span>
-                    ))}
+                  <div className="flex aspect-[1/1.41] items-center justify-center bg-zinc-900 text-zinc-500">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 )}
               </div>
-            ) : (
-              <div>
-                <p className="text-sm text-zinc-500">
-                  Analiza este CV para traer recomendaciones al editor.
-                </p>
-                <button
-                  type="button"
-                  onClick={onStartAnalysis}
-                  className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 text-xs font-semibold text-amber-300 hover:bg-amber-500/20"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Analizar CV
-                </button>
-              </div>
-            )}
-          </section>
-        </section>
-
-        <section className="min-h-0 overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-zinc-100">
-                {currentVersion?.name ?? selectedVersion.name}
-              </p>
-              <p className="text-xs text-zinc-500">
-                Preview editable · original preservado
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={locale}
-                onChange={(event) =>
-                  void updateLocale(event.target.value as CVTemplateLocale)
-                }
-                disabled={savingLocale}
-                className="h-9 rounded-lg border border-white/[0.06] bg-[#0a0a12] px-3 text-xs text-zinc-200 focus:border-teal-500/40 focus:outline-none disabled:opacity-50"
-              >
-                <option value="es">ES</option>
-                <option value="en">EN</option>
-              </select>
-              <a
-                href={`/api/cv-template-versions/${currentVersion?.id ?? selectedVersion.id}/pdf`}
-                className="flex h-9 items-center gap-2 rounded-lg bg-teal-500 px-3 text-xs font-semibold text-zinc-950 hover:bg-teal-400"
-              >
-                <Download className="h-4 w-4" />
-                PDF
-              </a>
-            </div>
+            </motion.div>
           </div>
+        </div>
 
-          <div className="h-full min-h-[720px] overflow-auto bg-zinc-900/70 p-4">
-            {currentProfile ? (
-              <div className="mx-auto max-w-[820px]">
-                <CVTemplatePreview
-                  profile={currentProfile}
-                  templateId={activeTemplate.templateId}
-                  locale={locale}
-                />
+        {/* Side Panel */}
+        <AnimatePresence>
+          {isPanelOpen && (
+            <motion.aside
+              initial={{ x: 380 }}
+              animate={{ x: 0 }}
+              exit={{ x: 380 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed inset-y-0 right-0 z-30 w-[380px] border-l border-white/5 bg-[#0a0a12]/95 backdrop-blur-xl md:relative"
+            >
+              <div className="flex h-full flex-col overflow-y-auto p-6 scrollbar-thin">
+                <div className="space-y-8">
+                  {/* IA Section */}
+                  <section>
+                    <header className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-400">
+                          <Sparkles className="h-4 w-4" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-white">Editor IA</h3>
+                      </div>
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="bg-transparent text-[11px] font-medium text-zinc-500 focus:outline-none cursor-pointer"
+                      >
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+                      </select>
+                    </header>
+
+                    {error && (
+                      <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-300">
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <textarea
+                          value={editInstruction}
+                          onChange={(e) => setEditInstruction(e.target.value)}
+                          placeholder="Describe los cambios que quieres hacer..."
+                          className="h-32 w-full resize-none rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-teal-500/30 focus:outline-none transition-colors"
+                        />
+                        <Button
+                          disabled={!editInstruction.trim() || editingProfile || !hasGeminiApiKey}
+                          onClick={() => applyInstruction()}
+                          className="absolute bottom-3 right-3 h-8 rounded-lg bg-teal-500 px-3 text-xs font-bold text-black hover:bg-teal-400 disabled:opacity-30"
+                        >
+                          {editingProfile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          "Acorta el Sobre mí",
+                          "Mejora claridad",
+                          "Hazlo más ejecutivo",
+                          "Corregir erratas",
+                        ].map((hint) => (
+                          <button
+                            key={hint}
+                            onClick={() => {
+                              setEditInstruction(hint);
+                              void applyInstruction(hint);
+                            }}
+                            className="rounded-full border border-white/5 bg-white/5 px-3 py-1 text-[11px] text-zinc-400 hover:border-white/10 hover:bg-white/10 hover:text-zinc-200 transition-colors"
+                          >
+                            {hint}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Recommendations Section */}
+                  <section className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+                          <Lightbulb className="h-4 w-4" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-white">Recomendaciones</h3>
+                      </div>
+                      {recommendationAnalysis?.ai_score && (
+                        <span className="text-xs font-bold text-amber-500">{recommendationAnalysis.ai_score}/100</span>
+                      )}
+                    </div>
+
+                    {recommendationAnalysis ? (
+                      <div className="space-y-3">
+                        {safeParseArray(recommendationAnalysis.ai_improvements).slice(0, 3).map((imp, i) => (
+                          <div key={i} className="flex gap-3 text-xs leading-relaxed text-zinc-400">
+                            <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500/40" />
+                            <p>{imp}</p>
+                          </div>
+                        ))}
+                        {safeParseArray(recommendationAnalysis.missing_keywords).length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {safeParseArray(recommendationAnalysis.missing_keywords).slice(0, 5).map((k) => (
+                              <span key={k} className="rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-500">
+                                {k}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-center">
+                        <p className="text-xs text-zinc-500 mb-3">No hay análisis para este CV</p>
+                        <Button variant="outline" size="sm" onClick={onStartAnalysis} className="h-8 text-[11px] border-white/10 text-zinc-400 hover:text-white">
+                          Analizar ahora
+                        </Button>
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Settings Section */}
+                  <section className="pt-4 border-t border-white/5 space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-600">Configuración</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-500">Idioma del CV</span>
+                        <div className="flex gap-1 rounded-lg border border-white/5 p-1 bg-white/5">
+                          {(["es", "en"] as const).map((l) => (
+                            <button
+                              key={l}
+                              onClick={() => updateLocale(l)}
+                              disabled={savingLocale}
+                              className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
+                                locale === l ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                              }`}
+                            >
+                              {l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-500">Diseño</span>
+                        <Button variant="link" onClick={onOpenTemplates} className="h-auto p-0 text-xs text-teal-400">
+                          Cambiar plantilla
+                        </Button>
+                      </div>
+                    </div>
+                  </section>
+
+                  {!hasGeminiApiKey && (
+                    <Button variant="secondary" onClick={onOpenSettings} className="w-full h-10 text-xs bg-amber-500 text-black hover:bg-amber-400">
+                      <KeyRound className="mr-2 h-3.5 w-3.5" />
+                      Configurar API Key
+                    </Button>
+                  )}
+                </div>
+
+                <div className="mt-auto pt-10">
+                  <p className="text-[10px] text-zinc-600 leading-relaxed">
+                    Estás editando una versión derivada. El archivo original y su extracción se mantienen intactos.
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="flex min-h-[560px] items-center justify-center text-sm text-zinc-600">
-                Cargando versión editable...
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <AnimatePresence>
+        {isSavingModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#0a0a12] p-6 shadow-2xl"
+            >
+              <h3 className="text-lg font-semibold text-white">Guardar en biblioteca</h3>
+              <p className="mt-2 text-sm text-zinc-500">
+                Se creará un nuevo CV en tu biblioteca con los cambios actuales.
+              </p>
+              <div className="mt-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-600">Nombre del CV</label>
+                  <input
+                    type="text"
+                    value={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                    className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:border-teal-500/50 focus:outline-none"
+                    placeholder="Ej: Mi CV - Versión IA"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsSavingModalOpen(false)}
+                    className="flex-1 text-zinc-400 hover:bg-white/5"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSaveAsCV}
+                    disabled={!saveName.trim() || savingAsCv}
+                    className="flex-1 bg-teal-500 text-black hover:bg-teal-400"
+                  >
+                    {savingAsCv ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
+                  </Button>
+                </div>
               </div>
-            )}
+            </motion.div>
           </div>
-        </section>
-      </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,20 +1,3 @@
-alter table public.cvs
-  add column if not exists active_template_id text,
-  add column if not exists template_locale text not null default 'es';
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'cvs_template_locale_check'
-  ) then
-    alter table public.cvs
-      add constraint cvs_template_locale_check
-      check (template_locale in ('es', 'en'));
-  end if;
-end $$;
-
 create table if not exists public.cv_template_versions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,

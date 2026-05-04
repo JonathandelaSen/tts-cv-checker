@@ -15,3 +15,7 @@ Never apply migrations or schema changes to the production Supabase project. Pre
 ## Git main branch
 
 Never push to `main`. Commit locally or push to a non-main branch if requested, but leave `main` pushes to the user unless they explicitly instruct otherwise in the same turn.
+
+## Worktrees
+
+Work directly on `main` (the primary checkout) by default. Do not create git worktrees or switch to alternate branches unless the user explicitly asks for it in the same turn. If worktrees were created in earlier turns, clean them up and continue on `main`.

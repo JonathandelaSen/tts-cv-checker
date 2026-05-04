@@ -351,6 +351,7 @@ export default function AppShell({
         onDelete={handleDelete}
         userEmail={userEmail}
         isAdmin={isAdmin}
+        isForceCollapsed={activeView === "editor"}
       />
 
       {/* Main Content */}
@@ -401,6 +402,7 @@ export default function AppShell({
                 hasGeminiApiKey={geminiApiKey.length > 0}
                 onOpenSettings={handleOpenSettings}
                 onOpenEditor={handleOpenEditor}
+                onOpenUpload={handleNewAnalysis}
                 onCVUpdated={fetchCVVersions}
               />
             </motion.div>
@@ -422,6 +424,7 @@ export default function AppShell({
                 onOpenSettings={handleOpenSettings}
                 onStartAnalysis={handleNewAnalysis}
                 onCVUpdated={fetchCVVersions}
+                onBackToLibrary={handleOpenCVs}
               />
             </motion.div>
           ) : activeView === "settings" ? (

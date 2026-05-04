@@ -40,8 +40,6 @@ export interface CVRecord extends ExtractedPdfText {
   filename: string;
   file_size: number | null;
   pdf_storage_path: string | null;
-  active_template_id?: string | null;
-  template_locale?: CVTemplateLocale;
   created_at: string;
   updated_at: string;
 }
@@ -51,8 +49,6 @@ export interface CVSummary {
   name: string;
   filename: string;
   file_size: number | null;
-  active_template_id?: string | null;
-  template_locale?: CVTemplateLocale;
   created_at: string;
   updated_at: string;
 }
@@ -251,28 +247,6 @@ export async function updateCVName(
   return (data as CVRecord | null) ?? null;
 }
 
-export async function updateCVTemplateSelection(
-  supabase: SupabaseClient,
-  id: string,
-  userId: string,
-  templateId: string,
-  locale: CVTemplateLocale
-): Promise<CVRecord | null> {
-  const { data, error } = await supabase
-    .from("cvs")
-    .update({
-      active_template_id: templateId,
-      template_locale: locale,
-    })
-    .eq("id", id)
-    .eq("user_id", userId)
-    .select("*")
-    .maybeSingle();
-
-  if (error) throw error;
-  return (data as CVRecord | null) ?? null;
-}
-
 function normalizeTemplateVersion(row: Record<string, unknown>): CVTemplateVersion {
   const source = (row.source_cv ?? row.cvs ?? null) as CVSummary | null;
   return {
@@ -393,6 +367,50 @@ export async function updateCVExtraction(
 
   if (error) throw error;
   return (data as CVRecord | null) ?? null;
+}
+
+export async function convertVersionToCV(
+  supabase: SupabaseClient,
+  versionId: string,
+  userId: string,
+  name: string
+): Promise<CVRecord> {
+  // 1. Get the version detail
+  const version = await getCVTemplateVersion(supabase, versionId, userId);
+  if (!version) throw new Error("Version not found");
+
+  // 2. Create a new CV record using the profile snapshot
+  // Since this is a "structured" CV, we store it without PDF storage path for now
+  // and we'll rely on generating the PDF on the fly or later.
+  // We populate text fields from the profile summary/bullets to keep it searchable.
+  const summaryText = version.profile.summary || "";
+  const expText = (version.profile.experience || []).map(e => `${e.company} ${e.role}`).join(" ");
+
+  const { data, error } = await supabase
+    .from("cvs")
+    .insert({
+      user_id: userId,
+      name: name,
+      filename: `version-${version.template_id}.json`,
+      text_node: `${summaryText} ${expText}`,
+      // We don't have a PDF yet, but we'll save the structured profile too
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  const newCV = data as CVRecord;
+
+  // 3. Clone the structured profile to the new CV
+  await upsertCVStructuredProfile(supabase, {
+    user_id: userId,
+    cv_id: newCV.id,
+    source_text_hash: version.source_text_hash,
+    ai_model: version.ai_model,
+    profile: version.profile
+  });
+
+  return newCV;
 }
 
 export async function listAnalysesForCV(
