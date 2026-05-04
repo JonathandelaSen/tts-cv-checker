@@ -17,20 +17,24 @@ import {
   X,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
-import type { AnalysisSummary, CVSummary } from "@/lib/db";
+import type { AnalysisSummary, CVSummary, CVTemplateVersion } from "@/lib/db";
 
 interface CVLibraryProps {
   cvs: CVSummary[];
+  cvVersions: CVTemplateVersion[];
   analyses: AnalysisSummary[];
   onRefresh: () => void;
   onOpenAnalysis: (id: string) => void;
+  onOpenEditor: (cvId: string) => void;
 }
 
 export default function CVLibrary({
   cvs,
+  cvVersions,
   analyses,
   onRefresh,
   onOpenAnalysis,
+  onOpenEditor,
 }: CVLibraryProps) {
   const [selectedId, setSelectedId] = useState(cvs[0]?.id ?? "");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -296,6 +300,33 @@ export default function CVLibrary({
                 </a>
               </div>
               <div className="border-b border-white/[0.06] px-4 py-3">
+                <div className="mb-4">
+                  <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold text-zinc-300">
+                    <Pencil className="h-3.5 w-3.5 text-teal-300" />
+                    Versiones con plantilla
+                  </p>
+                  {cvVersions.filter((version) => version.source_cv_id === selected.id)
+                    .length > 0 ? (
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {cvVersions
+                        .filter((version) => version.source_cv_id === selected.id)
+                        .map((version) => (
+                          <button
+                            key={version.id}
+                            type="button"
+                            onClick={() => onOpenEditor(version.id)}
+                            className="rounded-lg border border-teal-500/15 bg-teal-500/10 px-3 py-2 text-left text-xs font-semibold text-teal-200 hover:bg-teal-500/20"
+                          >
+                            {version.name}
+                          </button>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-white/[0.04] bg-[#0a0a12]/70 px-3 py-2 text-xs text-zinc-600">
+                      Aún no hay versiones con plantilla para este CV.
+                    </p>
+                  )}
+                </div>
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <p className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300">
                     <FileSearch className="h-3.5 w-3.5 text-sky-300" />

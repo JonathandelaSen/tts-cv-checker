@@ -5,6 +5,7 @@ import Sidebar, { type AnalysisSummary } from "@/components/sidebar";
 import NewAnalysisFlow from "@/components/new-analysis-flow";
 import CVLibrary from "@/components/cv-library";
 import TemplatesView from "@/components/templates-view";
+import CVEditorView from "@/components/cv-editor-view";
 import ExtractionView from "@/components/extraction-view";
 import AIAnalysisView from "@/components/ai-analysis-view";
 import SettingsView from "@/components/settings-view";
@@ -12,11 +13,23 @@ import AdminObservabilityDashboard from "@/components/admin-observability-dashbo
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { AnalysisMode, AIContext, CVSummary } from "@/lib/db";
+import type {
+  AnalysisMode,
+  AIContext,
+  CVSummary,
+  CVTemplateVersion,
+} from "@/lib/db";
 import { getStoredGeminiApiKey } from "@/lib/browser-preferences";
 
 type ViewTab = "extraction" | "analysis";
-type AppView = "new" | "analysis" | "cvs" | "templates" | "settings" | "admin";
+type AppView =
+  | "new"
+  | "analysis"
+  | "cvs"
+  | "templates"
+  | "editor"
+  | "settings"
+  | "admin";
 
 interface FullAnalysis {
   id: string;
@@ -67,12 +80,14 @@ export default function AppShell({
 }: AppShellProps) {
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
   const [cvs, setCVs] = useState<CVSummary[]>([]);
+  const [cvVersions, setCVVersions] = useState<CVTemplateVersion[]>([]);
   const [activeAnalysisId, setActiveAnalysisId] = useState<string | null>(null);
   const [activeAnalysis, setActiveAnalysis] = useState<FullAnalysis | null>(
     null
   );
   const [viewTab, setViewTab] = useState<ViewTab>("extraction");
   const [activeView, setActiveView] = useState<AppView>(initialView);
+  const [activeEditorCvId, setActiveEditorCvId] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(initialUserEmail);
   const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
@@ -103,9 +118,23 @@ export default function AppShell({
     }
   }, []);
 
+  const fetchCVVersions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cv-template-versions");
+      if (res.ok) {
+        const data = await res.json();
+        setCVVersions(data);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
   useEffect(() => {
-    void Promise.resolve().then(() => Promise.all([fetchAnalyses(), fetchCVs()]));
-  }, [fetchAnalyses, fetchCVs]);
+    void Promise.resolve().then(() =>
+      Promise.all([fetchAnalyses(), fetchCVs(), fetchCVVersions()])
+    );
+  }, [fetchAnalyses, fetchCVs, fetchCVVersions]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -171,6 +200,13 @@ export default function AppShell({
         setActiveAnalysisId(null);
         setActiveAnalysis(null);
       });
+    } else if (view === "editor") {
+      queueMicrotask(() => {
+        setActiveView("editor");
+        setActiveAnalysisId(null);
+        setActiveAnalysis(null);
+        setActiveEditorCvId(params.get("cv"));
+      });
     } else if (view === "settings") {
       queueMicrotask(() => {
         setActiveView("settings");
@@ -222,6 +258,21 @@ export default function AppShell({
     fetchCVs();
   };
 
+  const handleOpenEditor = (cvId?: string | null) => {
+    const targetCvId =
+      cvId ??
+      activeEditorCvId ??
+      cvVersions[0]?.id ??
+      null;
+    setActiveView("editor");
+    setActiveAnalysisId(null);
+    setActiveAnalysis(null);
+    setActiveEditorCvId(targetCvId);
+    const suffix = targetCvId ? `&cv=${encodeURIComponent(targetCvId)}` : "";
+    window.history.replaceState(null, "", `/?view=editor${suffix}`);
+    fetchCVVersions();
+  };
+
   const handleOpenSettings = () => {
     setActiveView("settings");
     setActiveAnalysisId(null);
@@ -248,6 +299,7 @@ export default function AppShell({
     fetchAnalysisDetail(id);
     fetchAnalyses();
     fetchCVs();
+    fetchCVVersions();
   };
 
   // Handle AI analysis complete
@@ -293,6 +345,7 @@ export default function AppShell({
         onNewAnalysis={handleNewAnalysis}
         onOpenCVs={handleOpenCVs}
         onOpenTemplates={handleOpenTemplates}
+        onOpenEditor={() => handleOpenEditor()}
         onOpenSettings={handleOpenSettings}
         onOpenAdmin={handleOpenAdmin}
         onDelete={handleDelete}
@@ -325,11 +378,13 @@ export default function AppShell({
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
-              <CVLibrary
+          <CVLibrary
                 cvs={cvs}
+                cvVersions={cvVersions}
                 analyses={analyses}
                 onRefresh={fetchCVs}
                 onOpenAnalysis={handleSelect}
+                onOpenEditor={handleOpenEditor}
               />
             </motion.div>
           ) : activeView === "templates" ? (
@@ -345,6 +400,28 @@ export default function AppShell({
                 geminiApiKey={geminiApiKey}
                 hasGeminiApiKey={geminiApiKey.length > 0}
                 onOpenSettings={handleOpenSettings}
+                onOpenEditor={handleOpenEditor}
+                onCVUpdated={fetchCVVersions}
+              />
+            </motion.div>
+          ) : activeView === "editor" ? (
+            <motion.div
+              key="editor"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
+            >
+              <CVEditorView
+                cvVersions={cvVersions}
+                hasOriginalCVs={cvs.length > 0}
+                activeVersionId={activeEditorCvId}
+                geminiApiKey={geminiApiKey}
+                hasGeminiApiKey={geminiApiKey.length > 0}
+                onOpenTemplates={handleOpenTemplates}
+                onOpenSettings={handleOpenSettings}
+                onStartAnalysis={handleNewAnalysis}
+                onCVUpdated={fetchCVVersions}
               />
             </motion.div>
           ) : activeView === "settings" ? (

@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Check,
   ChevronRight,
-  Download,
   FileText,
   KeyRound,
   LayoutTemplate,
   Loader2,
-  RefreshCw,
   Sparkles,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
-import type { CVStructuredProfile, CVSummary } from "@/lib/db";
+import type { CVSummary } from "@/lib/db";
 import {
   CV_TEMPLATES,
   type CVTemplateId,
@@ -27,6 +25,8 @@ interface TemplatesViewProps {
   geminiApiKey: string;
   hasGeminiApiKey: boolean;
   onOpenSettings: () => void;
+  onOpenEditor: (cvId: string) => void;
+  onCVUpdated: () => void;
 }
 
 export default function TemplatesView({
@@ -34,13 +34,14 @@ export default function TemplatesView({
   geminiApiKey,
   hasGeminiApiKey,
   onOpenSettings,
+  onOpenEditor,
+  onCVUpdated,
 }: TemplatesViewProps) {
   const [selectedCvId, setSelectedCvId] = useState(cvs[0]?.id ?? "");
   const [selectedTemplateId, setSelectedTemplateId] =
     useState<CVTemplateId>("compact");
   const [locale, setLocale] = useState<CVTemplateLocale>("es");
-  const [profile, setProfile] = useState<CVStructuredProfile | null>(null);
-  const [generatingProfile, setGeneratingProfile] = useState(false);
+  const [selecting, setSelecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selectedCv = useMemo(
@@ -48,7 +49,6 @@ export default function TemplatesView({
     [cvs, selectedCvId]
   );
   const activeCvId = selectedCv?.id ?? "";
-
   const selectedTemplate = useMemo(
     () =>
       CV_TEMPLATES.find(
@@ -57,80 +57,38 @@ export default function TemplatesView({
     [selectedTemplateId]
   );
 
-  useEffect(() => {
+  const selectTemplate = async (templateId = selectedTemplate.templateId) => {
     if (!activeCvId) {
+      setError("Selecciona un CV antes de elegir plantilla.");
       return;
     }
-
-    let cancelled = false;
-    fetch(`/api/cvs/${activeCvId}/structured-profile`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(
-            data.error || "No se pudo cargar el perfil estructurado"
-          );
-        }
-        return data.profile ?? null;
-      })
-      .then((nextProfile) => {
-        if (cancelled) return;
-        setError(null);
-        setProfile(nextProfile);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(getErrorMessage(err));
-        setProfile(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeCvId]);
-
-  const generateProfile = async (force = false) => {
-    if (!activeCvId) {
-      setError("Selecciona un CV para usar una plantilla.");
-      return;
-    }
-    if (!hasGeminiApiKey) {
-      setError("Configura tu API key de Gemini antes de estructurar el CV.");
-      return;
-    }
-
-    setGeneratingProfile(true);
+    setSelecting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/cvs/${activeCvId}/structured-profile`, {
+      const res = await fetch(`/api/cvs/${activeCvId}/template`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          templateId,
+          locale,
           geminiApiKey,
           model: "gemini-2.5-flash",
-          force,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || data.details || "No se pudo estructurar el CV");
+        throw new Error(
+          data.error || data.details || "No se pudo seleccionar la plantilla"
+        );
       }
-      setProfile(data.profile);
+      onCVUpdated();
+      onOpenEditor(data.version.id);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
-      setGeneratingProfile(false);
+      setSelecting(false);
     }
   };
-
-  const selectTemplate = (templateId: CVTemplateId) => {
-    setSelectedTemplateId(templateId);
-  };
-
-  const pdfHref =
-    selectedCv && profile
-      ? `/api/cvs/${selectedCv.id}/templates/${selectedTemplate.templateId}/pdf?locale=${locale}`
-      : "";
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8">
@@ -147,11 +105,12 @@ export default function TemplatesView({
               Plantillas
             </div>
             <h1 className="mt-3 text-3xl font-bold text-zinc-100">
-              Convierte tu CV en una versión lista para ATS
+              Elige la base visual de tu CV editable
             </h1>
             <p className="mt-2 max-w-xl text-sm text-zinc-500">
-              Elige una plantilla. La primera selección estructura el CV con IA;
-              después puedes cambiar de diseño sin consumir otra llamada.
+              Al seleccionar una plantilla se crea o reutiliza la versión
+              estructurada editable. El PDF original queda intacto para futuras
+              comparaciones.
             </p>
           </div>
 
@@ -186,155 +145,80 @@ export default function TemplatesView({
             </div>
           </section>
 
-          <section className="grid gap-3">
-            {CV_TEMPLATES.map((template) => (
-              <button
-                key={template.templateId}
-                type="button"
-                onClick={() => selectTemplate(template.templateId)}
-                className={`group rounded-xl border p-3 text-left transition-all ${
-                  selectedTemplate.templateId === template.templateId
-                    ? "border-teal-400/40 bg-teal-500/10"
-                    : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
-                }`}
-              >
-                <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
-                  <div className="h-44 overflow-hidden rounded-lg bg-zinc-100 p-2">
-                    <CVTemplatePreview
-                      profile={template.fixtureProfile}
-                      templateId={template.templateId}
-                      locale={locale}
-                      scale="card"
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-zinc-100">
-                          {template.name}
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-500">
-                          {template.description}
-                        </p>
-                      </div>
-                      {selectedTemplate.templateId === template.templateId && (
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-500/15 text-teal-300">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-4 text-xs text-zinc-600">
-                      Preview con datos lorem ipsum. Al seleccionarla se usará
-                      la información real del CV.
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))}
+          <section className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <label className="mb-2 block text-sm text-zinc-400">Idioma</label>
+            <select
+              value={locale}
+              onChange={(event) =>
+                setLocale(event.target.value as CVTemplateLocale)
+              }
+              className="h-10 w-full rounded-xl border border-white/[0.06] bg-[#0a0a12] px-4 text-sm text-zinc-200 focus:border-teal-500/40 focus:outline-none"
+            >
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
           </section>
+
+          {!hasGeminiApiKey && (
+            <section className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+              <p className="text-sm text-amber-100">
+                Hace falta tu API key de Gemini para estructurar el CV la primera
+                vez que eliges una plantilla.
+              </p>
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg bg-amber-400 px-3 text-xs font-semibold text-zinc-950 hover:bg-amber-300"
+              >
+                <KeyRound className="h-3.5 w-3.5" />
+                Configurar API key
+              </button>
+            </section>
+          )}
         </section>
 
-        <section className="min-w-0 rounded-xl border border-white/[0.06] bg-white/[0.02]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-zinc-100">
-                {selectedTemplate.name}
-              </p>
-              <p className="text-xs text-zinc-500">
-                {profile ? "Datos reales del CV" : "Esperando perfil estructurado"}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={locale}
-                onChange={(event) =>
-                  setLocale(event.target.value as CVTemplateLocale)
-                }
-                className="h-9 rounded-lg border border-white/[0.06] bg-[#0a0a12] px-3 text-xs text-zinc-200 focus:border-teal-500/40 focus:outline-none"
-              >
-                <option value="es">ES</option>
-                <option value="en">EN</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => generateProfile(true)}
-                disabled={!selectedCv || generatingProfile}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/5 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-                title="Regenerar JSON estándar"
-              >
-                {generatingProfile ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </button>
-              <a
-                href={pdfHref || undefined}
-                aria-disabled={!pdfHref}
-                className={`flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-colors ${
-                  pdfHref
-                    ? "bg-teal-500 text-zinc-950 hover:bg-teal-400"
-                    : "pointer-events-none bg-zinc-800 text-zinc-600"
-                }`}
-              >
-                <Download className="h-4 w-4" />
-                PDF
-              </a>
-            </div>
-          </div>
-
-          <div className="min-h-[720px] overflow-auto bg-zinc-900/70 p-4">
-            {profile ? (
-              <div className="mx-auto max-w-[820px]">
+        <section className="grid gap-4 md:grid-cols-2">
+          {CV_TEMPLATES.map((template) => (
+            <button
+              key={template.templateId}
+              type="button"
+              onClick={() => {
+                setSelectedTemplateId(template.templateId);
+                void selectTemplate(template.templateId);
+              }}
+              disabled={!activeCvId || selecting}
+              className={`group rounded-xl border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                selectedTemplateId === template.templateId
+                  ? "border-teal-400/40 bg-teal-500/10"
+                  : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
+              }`}
+            >
+              <div className="h-[520px] overflow-hidden rounded-lg bg-zinc-100 p-3">
                 <CVTemplatePreview
-                  profile={profile.profile}
-                  templateId={selectedTemplate.templateId}
+                  profile={template.fixtureProfile}
+                  templateId={template.templateId}
                   locale={locale}
                 />
               </div>
-            ) : (
-              <div className="flex min-h-[560px] flex-col items-center justify-center px-6 text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 text-teal-300">
-                  <Sparkles className="h-6 w-6" />
+              <div className="mt-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-zinc-100">{template.name}</p>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {template.description}
+                  </p>
                 </div>
-                <h2 className="text-lg font-semibold text-zinc-100">
-                  Estructura este CV para usar plantillas
-                </h2>
-                <p className="mt-2 max-w-md text-sm text-zinc-500">
-                  Se creará un JSON estándar reutilizable. Cambiar de plantilla
-                  después usará esta misma estructura.
-                </p>
-                <div className="mt-4 rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-300">
-                  <Sparkles className="mr-1 inline h-3 w-3" />
-                  Se usará la API de Gemini configurada para procesar el CV.
-                </div>
-                {hasGeminiApiKey ? (
-                  <button
-                    type="button"
-                    onClick={() => generateProfile(false)}
-                    disabled={!selectedCv || generatingProfile}
-                    className="mt-5 flex h-10 items-center gap-2 rounded-lg bg-teal-500 px-4 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {generatingProfile ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
-                    )}
-                    Estructurar CV
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onOpenSettings}
-                    className="mt-5 flex h-10 items-center gap-2 rounded-lg bg-zinc-100 px-4 text-sm font-semibold text-zinc-950 hover:bg-white"
-                  >
-                    <KeyRound className="h-4 w-4" />
-                    Configurar API key
-                  </button>
-                )}
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500/15 text-teal-300">
+                  {selecting && selectedTemplateId === template.templateId ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : selectedTemplateId === template.templateId ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                </span>
               </div>
-            )}
-          </div>
+            </button>
+          ))}
         </section>
       </motion.div>
     </div>

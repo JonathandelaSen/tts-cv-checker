@@ -4,6 +4,7 @@ import {
   normalizeStandardCVProfile,
   type StandardCVProfile,
 } from "@/lib/cv-profile";
+import type { CVTemplateId, CVTemplateLocale } from "@/lib/cv-templates";
 import type { ExtractedPdfText } from "@/lib/pdf-extraction";
 
 export const CV_PDFS_BUCKET = "cv-pdfs";
@@ -39,6 +40,8 @@ export interface CVRecord extends ExtractedPdfText {
   filename: string;
   file_size: number | null;
   pdf_storage_path: string | null;
+  active_template_id?: string | null;
+  template_locale?: CVTemplateLocale;
   created_at: string;
   updated_at: string;
 }
@@ -48,8 +51,26 @@ export interface CVSummary {
   name: string;
   filename: string;
   file_size: number | null;
+  active_template_id?: string | null;
+  template_locale?: CVTemplateLocale;
   created_at: string;
   updated_at: string;
+}
+
+export interface CVTemplateVersion {
+  id: string;
+  user_id: string;
+  source_cv_id: string;
+  name: string;
+  template_id: CVTemplateId;
+  template_locale: CVTemplateLocale;
+  schema_version: string;
+  source_text_hash: string;
+  ai_model: string;
+  profile: StandardCVProfile;
+  created_at: string;
+  updated_at: string;
+  source_cv?: CVSummary | null;
 }
 
 export interface CVStructuredProfile {
@@ -102,6 +123,12 @@ export interface AnalysisSummary {
   ai_score: number | null;
   ai_analyzed_at: string | null;
   job_url: string | null;
+}
+
+export interface CVRecommendationAnalysis extends AnalysisSummary {
+  ai_improvements: string | null;
+  missing_keywords: string | null;
+  ai_keywords: string | null;
 }
 
 export type DeleteCVResult =
@@ -224,6 +251,132 @@ export async function updateCVName(
   return (data as CVRecord | null) ?? null;
 }
 
+export async function updateCVTemplateSelection(
+  supabase: SupabaseClient,
+  id: string,
+  userId: string,
+  templateId: string,
+  locale: CVTemplateLocale
+): Promise<CVRecord | null> {
+  const { data, error } = await supabase
+    .from("cvs")
+    .update({
+      active_template_id: templateId,
+      template_locale: locale,
+    })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as CVRecord | null) ?? null;
+}
+
+function normalizeTemplateVersion(row: Record<string, unknown>): CVTemplateVersion {
+  const source = (row.source_cv ?? row.cvs ?? null) as CVSummary | null;
+  return {
+    id: row.id as string,
+    user_id: row.user_id as string,
+    source_cv_id: row.source_cv_id as string,
+    name: row.name as string,
+    template_id: row.template_id as CVTemplateId,
+    template_locale: (row.template_locale as CVTemplateLocale) ?? "es",
+    schema_version: row.schema_version as string,
+    source_text_hash: row.source_text_hash as string,
+    ai_model: row.ai_model as string,
+    profile: normalizeStandardCVProfile(row.profile),
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    source_cv: source,
+  };
+}
+
+export async function listCVTemplateVersions(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<CVTemplateVersion[]> {
+  const { data, error } = await supabase
+    .from("cv_template_versions")
+    .select(
+      "*, source_cv:cvs(id, name, filename, file_size, created_at, updated_at)"
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((row) =>
+    normalizeTemplateVersion(row as Record<string, unknown>)
+  );
+}
+
+export async function getCVTemplateVersion(
+  supabase: SupabaseClient,
+  id: string,
+  userId: string
+): Promise<CVTemplateVersion | null> {
+  const { data, error } = await supabase
+    .from("cv_template_versions")
+    .select(
+      "*, source_cv:cvs(id, name, filename, file_size, created_at, updated_at)"
+    )
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? normalizeTemplateVersion(data as Record<string, unknown>) : null;
+}
+
+export async function createCVTemplateVersion(
+  supabase: SupabaseClient,
+  data: {
+    user_id: string;
+    source_cv_id: string;
+    name: string;
+    template_id: CVTemplateId;
+    template_locale: CVTemplateLocale;
+    schema_version: string;
+    source_text_hash: string;
+    ai_model: string;
+    profile: StandardCVProfile;
+  }
+): Promise<CVTemplateVersion> {
+  const { data: version, error } = await supabase
+    .from("cv_template_versions")
+    .insert(data)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return normalizeTemplateVersion(version as Record<string, unknown>);
+}
+
+export async function updateCVTemplateVersion(
+  supabase: SupabaseClient,
+  id: string,
+  userId: string,
+  data: {
+    name?: string;
+    template_locale?: CVTemplateLocale;
+    ai_model?: string;
+    profile?: StandardCVProfile;
+  }
+): Promise<CVTemplateVersion | null> {
+  const { data: version, error } = await supabase
+    .from("cv_template_versions")
+    .update(data)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return version
+    ? normalizeTemplateVersion(version as Record<string, unknown>)
+    : null;
+}
+
 export async function updateCVExtraction(
   supabase: SupabaseClient,
   id: string,
@@ -258,6 +411,35 @@ export async function listAnalysesForCV(
 
   if (error) throw error;
   return (data ?? []) as AnalysisSummary[];
+}
+
+export async function getLatestRecommendationAnalysisForCV(
+  supabase: SupabaseClient,
+  cvId: string,
+  userId: string
+): Promise<CVRecommendationAnalysis | null> {
+  const { data, error } = await supabase
+    .from("analyses")
+    .select(
+      "id, cv_id, title, filename, created_at, analysis_mode, ai_score, ai_analyzed_at, job_url, ai_improvements, missing_keywords, ai_keywords"
+    )
+    .eq("cv_id", cvId)
+    .eq("user_id", userId)
+    .not("ai_score", "is", null)
+    .order("ai_analyzed_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    ...(data as CVRecommendationAnalysis),
+    ai_improvements: stringifyJson(data.ai_improvements),
+    missing_keywords: stringifyJson(data.missing_keywords),
+    ai_keywords: stringifyJson(data.ai_keywords),
+  };
 }
 
 export async function deleteCV(

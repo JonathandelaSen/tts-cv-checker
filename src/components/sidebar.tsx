@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Menu,
   LayoutTemplate,
+  Wand2,
 } from "lucide-react";
 import type { AnalysisMode } from "@/lib/db";
 
@@ -36,11 +37,19 @@ export interface AnalysisSummary {
 interface SidebarProps {
   analyses: AnalysisSummary[];
   activeId: string | null;
-  activeView: "new" | "analysis" | "cvs" | "templates" | "settings" | "admin";
+  activeView:
+    | "new"
+    | "analysis"
+    | "cvs"
+    | "templates"
+    | "editor"
+    | "settings"
+    | "admin";
   onSelect: (id: string) => void;
   onNewAnalysis: () => void;
   onOpenCVs: () => void;
   onOpenTemplates: () => void;
+  onOpenEditor: () => void;
   onOpenSettings: () => void;
   onOpenAdmin: () => void;
   onDelete: (id: string) => void;
@@ -56,6 +65,7 @@ export default function Sidebar({
   onNewAnalysis,
   onOpenCVs,
   onOpenTemplates,
+  onOpenEditor,
   onOpenSettings,
   onOpenAdmin,
   onDelete,
@@ -208,6 +218,17 @@ export default function Sidebar({
         >
           <LayoutTemplate className="w-4 h-4 shrink-0" />
           {!collapsed && <span>Plantillas</span>}
+        </button>
+        <button
+          onClick={onOpenEditor}
+          className={`
+            w-full flex items-center gap-2 rounded-lg font-medium transition-all duration-150
+            ${activeView === "editor" ? "bg-white/[0.08] text-zinc-100" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}
+            ${collapsed ? "justify-center p-2" : "px-3 py-2.5 text-sm"}
+          `}
+        >
+          <Wand2 className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>Editor</span>}
         </button>
       </div>
 
