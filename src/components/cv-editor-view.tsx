@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import type {
   CVRecommendationAnalysis,
-  CVTemplateVersion,
+  CVSummary,
 } from "@/lib/db";
 import { getCVTemplate, type CVTemplateLocale } from "@/lib/cv-templates";
 import { getErrorMessage } from "@/lib/errors";
@@ -34,7 +34,7 @@ import CVTemplatePreview from "@/components/cv-template-preview";
 import { Button } from "@/components/ui/button";
 
 interface CVEditorViewProps {
-  cvVersions: CVTemplateVersion[];
+  cvs: CVSummary[];
   hasOriginalCVs: boolean;
   activeVersionId: string | null;
   geminiApiKey: string;
@@ -58,7 +58,7 @@ function safeParseArray(value: string | null | undefined): string[] {
 }
 
 export default function CVEditorView({
-  cvVersions,
+  cvs,
   hasOriginalCVs,
   activeVersionId,
   geminiApiKey,
@@ -75,7 +75,7 @@ export default function CVEditorView({
   const [saveName, setSaveName] = useState("");
   const [savingAsCv, setSavingAsCv] = useState(false);
   const [manuallySelectedVersionId, setManuallySelectedVersionId] = useState<string | null>(null);
-  const [editedVersion, setEditedVersion] = useState<CVTemplateVersion | null>(null);
+  const [editedVersion, setEditedVersion] = useState<CVSummary | null>(null);
   const [recommendationAnalysis, setRecommendationAnalysis] = useState<CVRecommendationAnalysis | null>(null);
   const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
   const [editInstruction, setEditInstruction] = useState("");
@@ -83,14 +83,14 @@ export default function CVEditorView({
   const [savingLocale, setSavingLocale] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentVersionId = manuallySelectedVersionId ?? activeVersionId ?? cvVersions[0]?.id;
-  const currentVersionFromList = useMemo(() => 
-    cvVersions.find(v => v.id === currentVersionId) ?? cvVersions[0] ?? null
-  , [cvVersions, currentVersionId]);
+  const currentVersionId = manuallySelectedVersionId ?? activeVersionId ?? cvs[0]?.id;
+  const currentVersionFromList = useMemo(() =>
+    cvs.find(v => v.id === currentVersionId) ?? cvs[0] ?? null
+  , [cvs, currentVersionId]);
 
   const currentVersion = editedVersion?.id === currentVersionFromList?.id ? editedVersion : currentVersionFromList;
   const activeTemplate = currentVersion?.template_id ? getCVTemplate(currentVersion.template_id) : null;
-  const locale = currentVersion?.template_locale ?? "es";
+  const locale = (currentVersion?.template_locale ?? "es") as CVTemplateLocale;
 
   useEffect(() => {
     if (!currentVersion?.source_cv_id) return;
@@ -119,7 +119,7 @@ export default function CVEditorView({
     if (!currentVersion?.id || !saveName.trim()) return;
     setSavingAsCv(true);
     try {
-      const res = await fetch(`/api/cv-template-versions/${currentVersion.id}/save-as-cv`, {
+      const res = await fetch(`/api/cvs/${currentVersion.id}/save-as-cv`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: saveName.trim() }),
@@ -145,7 +145,7 @@ export default function CVEditorView({
     setEditingProfile(true);
     setError(null);
     try {
-      const res = await fetch(`/api/cv-template-versions/${currentVersion.id}/edit`, {
+      const res = await fetch(`/api/cvs/${currentVersion.id}/edit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,7 +173,7 @@ export default function CVEditorView({
     setSavingLocale(true);
     setError(null);
     try {
-      const res = await fetch(`/api/cv-template-versions/${currentVersion.id}`, {
+      const res = await fetch(`/api/cvs/${currentVersion.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template_locale: nextLocale }),
@@ -222,7 +222,7 @@ export default function CVEditorView({
               <h2 className="truncate text-sm font-semibold text-white">{currentVersion.name}</h2>
               <span className="text-[10px] text-zinc-600">basado en</span>
               <span className="truncate text-[11px] font-medium text-teal-500/80 italic">
-                {currentVersion.source_cv?.name || "CV Original"}
+CV Original
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] text-zinc-500">
@@ -263,17 +263,14 @@ export default function CVEditorView({
 
           <div className="hidden h-4 w-[1px] bg-white/10 md:block" />
 
-          <Button
-            asChild
-            variant="ghost"
-            className="h-9 gap-2 border border-white/5 bg-white/5 text-xs text-white hover:bg-white/10"
+          <a
+            href={`/api/cvs/${currentVersion.id}/template-pdf`}
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-3 text-xs text-white hover:bg-white/10"
           >
-            <a href={`/api/cv-template-versions/${currentVersion.id}/pdf`}>
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Descargar PDF</span>
-              <span className="sm:hidden">PDF</span>
-            </a>
-          </Button>
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Descargar PDF</span>
+            <span className="sm:hidden">PDF</span>
+          </a>
 
           <Button
             variant="ghost"

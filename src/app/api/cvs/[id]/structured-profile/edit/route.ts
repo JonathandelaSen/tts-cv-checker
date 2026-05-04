@@ -80,7 +80,7 @@ export async function POST(
       );
     }
 
-    const template = getCVTemplate(templateId ?? cv.active_template_id ?? "");
+    const template = getCVTemplate(templateId ?? cv.template_id ?? "");
     if (!template) {
       return NextResponse.json(
         { error: "Selecciona una plantilla antes de editar el CV." },

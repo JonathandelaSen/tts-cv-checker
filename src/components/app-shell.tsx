@@ -17,7 +17,6 @@ import type {
   AnalysisMode,
   AIContext,
   CVSummary,
-  CVTemplateVersion,
 } from "@/lib/db";
 import { getStoredGeminiApiKey } from "@/lib/browser-preferences";
 
@@ -80,7 +79,6 @@ export default function AppShell({
 }: AppShellProps) {
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
   const [cvs, setCVs] = useState<CVSummary[]>([]);
-  const [cvVersions, setCVVersions] = useState<CVTemplateVersion[]>([]);
   const [activeAnalysisId, setActiveAnalysisId] = useState<string | null>(null);
   const [activeAnalysis, setActiveAnalysis] = useState<FullAnalysis | null>(
     null
@@ -118,23 +116,11 @@ export default function AppShell({
     }
   }, []);
 
-  const fetchCVVersions = useCallback(async () => {
-    try {
-      const res = await fetch("/api/cv-template-versions");
-      if (res.ok) {
-        const data = await res.json();
-        setCVVersions(data);
-      }
-    } catch {
-      // silent
-    }
-  }, []);
-
   useEffect(() => {
     void Promise.resolve().then(() =>
-      Promise.all([fetchAnalyses(), fetchCVs(), fetchCVVersions()])
+      Promise.all([fetchAnalyses(), fetchCVs()])
     );
-  }, [fetchAnalyses, fetchCVs, fetchCVVersions]);
+  }, [fetchAnalyses, fetchCVs]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -259,10 +245,11 @@ export default function AppShell({
   };
 
   const handleOpenEditor = (cvId?: string | null) => {
+    const templateCVs = cvs.filter(c => c.type === "template");
     const targetCvId =
       cvId ??
       activeEditorCvId ??
-      cvVersions[0]?.id ??
+      templateCVs[0]?.id ??
       null;
     setActiveView("editor");
     setActiveAnalysisId(null);
@@ -270,7 +257,7 @@ export default function AppShell({
     setActiveEditorCvId(targetCvId);
     const suffix = targetCvId ? `&cv=${encodeURIComponent(targetCvId)}` : "";
     window.history.replaceState(null, "", `/?view=editor${suffix}`);
-    fetchCVVersions();
+    fetchCVs();
   };
 
   const handleOpenSettings = () => {
@@ -299,7 +286,6 @@ export default function AppShell({
     fetchAnalysisDetail(id);
     fetchAnalyses();
     fetchCVs();
-    fetchCVVersions();
   };
 
   // Handle AI analysis complete
@@ -366,7 +352,7 @@ export default function AppShell({
               className="flex-1 flex flex-col min-h-0"
             >
               <NewAnalysisFlow
-                cvs={cvs}
+                cvs={cvs.filter(c => c.type === "uploaded")}
                 onCVCreated={fetchCVs}
                 onAnalysisCreated={handleAnalysisCreated}
               />
@@ -381,7 +367,6 @@ export default function AppShell({
             >
           <CVLibrary
                 cvs={cvs}
-                cvVersions={cvVersions}
                 analyses={analyses}
                 onRefresh={fetchCVs}
                 onOpenAnalysis={handleSelect}
@@ -397,13 +382,13 @@ export default function AppShell({
               className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
               <TemplatesView
-                cvs={cvs}
+                cvs={cvs.filter(c => c.type === "uploaded")}
                 geminiApiKey={geminiApiKey}
                 hasGeminiApiKey={geminiApiKey.length > 0}
                 onOpenSettings={handleOpenSettings}
                 onOpenEditor={handleOpenEditor}
                 onOpenUpload={handleNewAnalysis}
-                onCVUpdated={fetchCVVersions}
+                onCVUpdated={fetchCVs}
               />
             </motion.div>
           ) : activeView === "editor" ? (
@@ -415,15 +400,15 @@ export default function AppShell({
               className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
               <CVEditorView
-                cvVersions={cvVersions}
-                hasOriginalCVs={cvs.length > 0}
+                cvs={cvs.filter(c => c.type === "template")}
+                hasOriginalCVs={cvs.some(c => c.type === "uploaded")}
                 activeVersionId={activeEditorCvId}
                 geminiApiKey={geminiApiKey}
                 hasGeminiApiKey={geminiApiKey.length > 0}
                 onOpenTemplates={handleOpenTemplates}
                 onOpenSettings={handleOpenSettings}
                 onStartAnalysis={handleNewAnalysis}
-                onCVUpdated={fetchCVVersions}
+                onCVUpdated={fetchCVs}
                 onBackToLibrary={handleOpenCVs}
               />
             </motion.div>

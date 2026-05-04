@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createCVTemplateVersion,
+  createTemplateCV,
   getCV,
   getCVStructuredProfile,
   upsertCVStructuredProfile,
@@ -89,7 +89,7 @@ export async function POST(
       });
     }
 
-    const version = await createCVTemplateVersion(supabase, {
+    const templateCV = await createTemplateCV(supabase, {
       user_id: user.id,
       source_cv_id: id,
       name: `${cv.name} · ${template.name}`,
@@ -101,7 +101,7 @@ export async function POST(
       profile: profile.profile,
     });
 
-    return NextResponse.json({ version, profile });
+    return NextResponse.json({ version: templateCV, profile });
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     console.error("Template selection error:", message, error);

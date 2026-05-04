@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getCVTemplateVersion,
+  getCV,
   getLatestRecommendationAnalysisForCV,
-  updateCVTemplateVersion,
+  updateCVProfile,
 } from "@/lib/db";
 import { editCVProfileWithAI } from "@/lib/ai-cv-editing";
 import { getErrorMessage } from "@/lib/errors";
@@ -56,16 +56,18 @@ export async function POST(
       );
     }
 
-    const version = await getCVTemplateVersion(supabase, id, user.id);
-    if (!version) {
-      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    const cv = await getCV(supabase, id, user.id);
+    if (!cv || cv.type !== "template") {
+      return NextResponse.json({ error: "Template CV not found" }, { status: 404 });
+    }
+    if (!cv.profile) {
+      return NextResponse.json({ error: "CV has no profile" }, { status: 400 });
     }
 
-    const latestAnalysis = await getLatestRecommendationAnalysisForCV(
-      supabase,
-      version.source_cv_id,
-      user.id
-    );
+    const sourceCvId = cv.source_cv_id;
+    const latestAnalysis = sourceCvId
+      ? await getLatestRecommendationAnalysisForCV(supabase, sourceCvId, user.id)
+      : null;
     const recommendations = latestAnalysis
       ? [
           ...parseStringArray(latestAnalysis.ai_improvements),
@@ -78,23 +80,23 @@ export async function POST(
     const editedProfile = await editCVProfileWithAI({
       apiKey: geminiApiKey.trim(),
       model,
-      profile: version.profile,
+      profile: cv.profile,
       instruction: instruction.trim(),
-      templateId: version.template_id,
-      locale: version.template_locale,
+      templateId: (cv.template_id ?? "compact") as "compact",
+      locale: (cv.template_locale ?? "es") as "es" | "en",
       recommendations,
     });
 
-    const updated = await updateCVTemplateVersion(supabase, id, user.id, {
+    const updated = await updateCVProfile(supabase, id, user.id, {
       ai_model: model,
       profile: editedProfile,
     });
 
     return NextResponse.json({ version: updated });
   } catch (error: unknown) {
-    console.error("Template version edit error:", error);
+    console.error("CV edit error:", error);
     return NextResponse.json(
-      { error: "Failed to edit CV version", details: getErrorMessage(error) },
+      { error: "Failed to edit CV", details: getErrorMessage(error) },
       { status: 500 }
     );
   }

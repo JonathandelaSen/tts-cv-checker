@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       cv_id: cv.id,
       title: trimmedTitle,
-      filename: cv.filename,
+      filename: cv.filename ?? "",
       file_size: cv.file_size,
       pdf_storage_path: cv.pdf_storage_path,
       text_python: cv.text_python,

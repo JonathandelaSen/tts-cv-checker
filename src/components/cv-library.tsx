@@ -17,11 +17,10 @@ import {
   X,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
-import type { AnalysisSummary, CVSummary, CVTemplateVersion } from "@/lib/db";
+import type { AnalysisSummary, CVSummary } from "@/lib/db";
 
 interface CVLibraryProps {
   cvs: CVSummary[];
-  cvVersions: CVTemplateVersion[];
   analyses: AnalysisSummary[];
   onRefresh: () => void;
   onOpenAnalysis: (id: string) => void;
@@ -30,7 +29,6 @@ interface CVLibraryProps {
 
 export default function CVLibrary({
   cvs,
-  cvVersions,
   analyses,
   onRefresh,
   onOpenAnalysis,
@@ -305,19 +303,19 @@ export default function CVLibrary({
                     <Pencil className="h-3.5 w-3.5 text-teal-300" />
                     Versiones con plantilla
                   </p>
-                  {cvVersions.filter((version) => version.source_cv_id === selected.id)
+                  {cvs.filter((c) => c.type === "template" && c.source_cv_id === selected.id)
                     .length > 0 ? (
                     <div className="grid gap-2 md:grid-cols-2">
-                      {cvVersions
-                        .filter((version) => version.source_cv_id === selected.id)
-                        .map((version) => (
+                      {cvs
+                        .filter((c) => c.type === "template" && c.source_cv_id === selected.id)
+                        .map((tpl) => (
                           <button
-                            key={version.id}
+                            key={tpl.id}
                             type="button"
-                            onClick={() => onOpenEditor(version.id)}
+                            onClick={() => onOpenEditor(tpl.id)}
                             className="rounded-lg border border-teal-500/15 bg-teal-500/10 px-3 py-2 text-left text-xs font-semibold text-teal-200 hover:bg-teal-500/20"
                           >
-                            {version.name}
+                            {tpl.name}
                           </button>
                         ))}
                     </div>

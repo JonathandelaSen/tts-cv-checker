@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deleteCV, getCV, updateCVName } from "@/lib/db";
+import { deleteCV, getCV, updateCVName, updateCVProfile } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,8 +45,25 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { name } = (await req.json()) as { name?: string };
-    const trimmedName = name?.trim();
+    const body = (await req.json()) as {
+      name?: string;
+      profile?: Record<string, unknown>;
+      template_locale?: string;
+    };
+
+    if (body.profile || body.template_locale) {
+      const updated = await updateCVProfile(supabase, id, user.id, {
+        ...(body.name?.trim() ? { name: body.name.trim() } : {}),
+        ...(body.profile ? { profile: body.profile as never } : {}),
+        ...(body.template_locale ? { template_locale: body.template_locale } : {}),
+      });
+      if (!updated) {
+        return NextResponse.json({ error: "Template CV not found" }, { status: 404 });
+      }
+      return NextResponse.json(updated);
+    }
+
+    const trimmedName = body.name?.trim();
     if (!trimmedName) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }

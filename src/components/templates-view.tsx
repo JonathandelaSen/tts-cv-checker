@@ -51,9 +51,9 @@ export default function TemplatesView({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredCvs = cvs.filter(cv => 
+  const filteredCvs = cvs.filter(cv =>
     cv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cv.filename.toLowerCase().includes(searchQuery.toLowerCase())
+    (cv.filename ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleCreateVersion = async () => {

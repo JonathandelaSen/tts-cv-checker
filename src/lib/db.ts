@@ -4,7 +4,6 @@ import {
   normalizeStandardCVProfile,
   type StandardCVProfile,
 } from "@/lib/cv-profile";
-import type { CVTemplateId, CVTemplateLocale } from "@/lib/cv-templates";
 import type { ExtractedPdfText } from "@/lib/pdf-extraction";
 
 export const CV_PDFS_BUCKET = "cv-pdfs";
@@ -33,13 +32,23 @@ export interface JobKeyData {
   notablePoints?: string[];
 }
 
+export type CVType = "uploaded" | "template";
+
 export interface CVRecord extends ExtractedPdfText {
   id: string;
   user_id: string;
   name: string;
-  filename: string;
+  filename: string | null;
   file_size: number | null;
   pdf_storage_path: string | null;
+  type: CVType;
+  source_cv_id: string | null;
+  template_id: string | null;
+  template_locale: string | null;
+  schema_version: string | null;
+  source_text_hash: string | null;
+  ai_model: string | null;
+  profile: StandardCVProfile | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,26 +56,15 @@ export interface CVRecord extends ExtractedPdfText {
 export interface CVSummary {
   id: string;
   name: string;
-  filename: string;
+  filename: string | null;
   file_size: number | null;
+  type: CVType;
+  source_cv_id: string | null;
+  template_id: string | null;
+  template_locale: string | null;
+  profile: StandardCVProfile | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface CVTemplateVersion {
-  id: string;
-  user_id: string;
-  source_cv_id: string;
-  name: string;
-  template_id: CVTemplateId;
-  template_locale: CVTemplateLocale;
-  schema_version: string;
-  source_text_hash: string;
-  ai_model: string;
-  profile: StandardCVProfile;
-  created_at: string;
-  updated_at: string;
-  source_cv?: CVSummary | null;
 }
 
 export interface CVStructuredProfile {
@@ -205,7 +203,7 @@ export async function listCVs(
 ): Promise<CVSummary[]> {
   const { data, error } = await supabase
     .from("cvs")
-    .select("id, name, filename, file_size, created_at, updated_at")
+    .select("id, name, filename, file_size, type, source_cv_id, template_id, template_locale, profile, created_at, updated_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -247,108 +245,52 @@ export async function updateCVName(
   return (data as CVRecord | null) ?? null;
 }
 
-function normalizeTemplateVersion(row: Record<string, unknown>): CVTemplateVersion {
-  const source = (row.source_cv ?? row.cvs ?? null) as CVSummary | null;
-  return {
-    id: row.id as string,
-    user_id: row.user_id as string,
-    source_cv_id: row.source_cv_id as string,
-    name: row.name as string,
-    template_id: row.template_id as CVTemplateId,
-    template_locale: (row.template_locale as CVTemplateLocale) ?? "es",
-    schema_version: row.schema_version as string,
-    source_text_hash: row.source_text_hash as string,
-    ai_model: row.ai_model as string,
-    profile: normalizeStandardCVProfile(row.profile),
-    created_at: row.created_at as string,
-    updated_at: row.updated_at as string,
-    source_cv: source,
-  };
-}
-
-export async function listCVTemplateVersions(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<CVTemplateVersion[]> {
-  const { data, error } = await supabase
-    .from("cv_template_versions")
-    .select(
-      "*, source_cv:cvs(id, name, filename, file_size, created_at, updated_at)"
-    )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []).map((row) =>
-    normalizeTemplateVersion(row as Record<string, unknown>)
-  );
-}
-
-export async function getCVTemplateVersion(
-  supabase: SupabaseClient,
-  id: string,
-  userId: string
-): Promise<CVTemplateVersion | null> {
-  const { data, error } = await supabase
-    .from("cv_template_versions")
-    .select(
-      "*, source_cv:cvs(id, name, filename, file_size, created_at, updated_at)"
-    )
-    .eq("id", id)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data ? normalizeTemplateVersion(data as Record<string, unknown>) : null;
-}
-
-export async function createCVTemplateVersion(
+export async function createTemplateCV(
   supabase: SupabaseClient,
   data: {
     user_id: string;
     source_cv_id: string;
     name: string;
-    template_id: CVTemplateId;
-    template_locale: CVTemplateLocale;
+    template_id: string;
+    template_locale: string;
     schema_version: string;
     source_text_hash: string;
     ai_model: string;
     profile: StandardCVProfile;
   }
-): Promise<CVTemplateVersion> {
-  const { data: version, error } = await supabase
-    .from("cv_template_versions")
-    .insert(data)
+): Promise<CVRecord> {
+  const { data: cv, error } = await supabase
+    .from("cvs")
+    .insert({ ...data, type: "template" as const })
     .select("*")
     .single();
 
   if (error) throw error;
-  return normalizeTemplateVersion(version as Record<string, unknown>);
+  return cv as CVRecord;
 }
 
-export async function updateCVTemplateVersion(
+export async function updateCVProfile(
   supabase: SupabaseClient,
   id: string,
   userId: string,
   data: {
-    name?: string;
-    template_locale?: CVTemplateLocale;
-    ai_model?: string;
     profile?: StandardCVProfile;
+    ai_model?: string;
+    name?: string;
+    template_locale?: string;
   }
-): Promise<CVTemplateVersion | null> {
-  const { data: version, error } = await supabase
-    .from("cv_template_versions")
+): Promise<CVRecord | null> {
+  const { data: cv, error } = await supabase
+    .from("cvs")
     .update(data)
     .eq("id", id)
     .eq("user_id", userId)
+    .eq("type", "template")
     .select("*")
     .maybeSingle();
 
   if (error) throw error;
-  return version
-    ? normalizeTemplateVersion(version as Record<string, unknown>)
-    : null;
+  return (cv as CVRecord | null) ?? null;
 }
 
 export async function updateCVExtraction(
@@ -367,50 +309,6 @@ export async function updateCVExtraction(
 
   if (error) throw error;
   return (data as CVRecord | null) ?? null;
-}
-
-export async function convertVersionToCV(
-  supabase: SupabaseClient,
-  versionId: string,
-  userId: string,
-  name: string
-): Promise<CVRecord> {
-  // 1. Get the version detail
-  const version = await getCVTemplateVersion(supabase, versionId, userId);
-  if (!version) throw new Error("Version not found");
-
-  // 2. Create a new CV record using the profile snapshot
-  // Since this is a "structured" CV, we store it without PDF storage path for now
-  // and we'll rely on generating the PDF on the fly or later.
-  // We populate text fields from the profile summary/bullets to keep it searchable.
-  const summaryText = version.profile.summary || "";
-  const expText = (version.profile.experience || []).map(e => `${e.company} ${e.role}`).join(" ");
-
-  const { data, error } = await supabase
-    .from("cvs")
-    .insert({
-      user_id: userId,
-      name: name,
-      filename: `version-${version.template_id}.json`,
-      text_node: `${summaryText} ${expText}`,
-      // We don't have a PDF yet, but we'll save the structured profile too
-    })
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  const newCV = data as CVRecord;
-
-  // 3. Clone the structured profile to the new CV
-  await upsertCVStructuredProfile(supabase, {
-    user_id: userId,
-    cv_id: newCV.id,
-    source_text_hash: version.source_text_hash,
-    ai_model: version.ai_model,
-    profile: version.profile
-  });
-
-  return newCV;
 }
 
 export async function listAnalysesForCV(
@@ -468,8 +366,10 @@ export async function deleteCV(
   const cv = await getCV(supabase, id, userId);
   if (!cv) return { status: "not_found" };
 
-  const analyses = await listAnalysesForCV(supabase, id, userId);
-  if (analyses.length > 0) return { status: "in_use", analyses };
+  if (cv.type === "uploaded") {
+    const analyses = await listAnalysesForCV(supabase, id, userId);
+    if (analyses.length > 0) return { status: "in_use", analyses };
+  }
 
   if (cv.pdf_storage_path) {
     const { error: storageError } = await supabase.storage

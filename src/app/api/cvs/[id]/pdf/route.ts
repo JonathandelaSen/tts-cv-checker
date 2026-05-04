@@ -44,7 +44,7 @@ export async function GET(
     return new NextResponse(data, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `${disposition}; filename="${encodeURIComponent(cv.filename)}"`,
+        "Content-Disposition": `${disposition}; filename="${encodeURIComponent(cv.filename ?? "cv.pdf")}"`,
       },
     });
   } catch (error: unknown) {
