@@ -245,12 +245,7 @@ export default function AppShell({
   };
 
   const handleOpenEditor = (cvId?: string | null) => {
-    const templateCVs = cvs.filter(c => c.type === "template");
-    const targetCvId =
-      cvId ??
-      activeEditorCvId ??
-      templateCVs[0]?.id ??
-      null;
+    const targetCvId = cvId !== undefined ? cvId : null;
     setActiveView("editor");
     setActiveAnalysisId(null);
     setActiveAnalysis(null);

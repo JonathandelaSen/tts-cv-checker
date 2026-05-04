@@ -83,9 +83,9 @@ export default function CVEditorView({
   const [savingLocale, setSavingLocale] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentVersionId = manuallySelectedVersionId ?? activeVersionId ?? cvs[0]?.id;
+  const currentVersionId = manuallySelectedVersionId ?? activeVersionId;
   const currentVersionFromList = useMemo(() =>
-    cvs.find(v => v.id === currentVersionId) ?? cvs[0] ?? null
+    currentVersionId ? cvs.find(v => v.id === currentVersionId) ?? null : null
   , [cvs, currentVersionId]);
 
   const currentVersion = editedVersion?.id === currentVersionFromList?.id ? editedVersion : currentVersionFromList;
@@ -191,18 +191,44 @@ export default function CVEditorView({
 
   if (!currentVersion || !activeTemplate) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center bg-[#050509] p-10 text-center">
-        <div className="max-w-md">
+      <div className="flex h-full w-full flex-col items-center justify-center bg-[#050509] p-10 text-center overflow-y-auto">
+        <div className="max-w-3xl w-full">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-400">
             <LayoutTemplate className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-bold text-white">No hay versión activa</h2>
-          <p className="mt-4 text-zinc-500">
-            Para editar un CV, primero debes seleccionar una plantilla y crear una versión editable.
+          <h2 className="text-2xl font-bold text-white mb-2">Selecciona un CV para editar</h2>
+          <p className="text-zinc-500 mb-8">
+            Elige uno de los CVs basados en plantillas para comenzar a editarlo con IA.
           </p>
-          <Button onClick={onOpenTemplates} className="mt-8 bg-teal-500 text-black hover:bg-teal-400">
-            Ir al catálogo de plantillas
-          </Button>
+          
+          {cvs.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+              {cvs.map((cv) => (
+                <button
+                  key={cv.id}
+                  onClick={() => setManuallySelectedVersionId(cv.id)}
+                  className="flex flex-col items-start rounded-xl border border-white/5 bg-white/5 p-4 hover:border-teal-500/30 hover:bg-white/10 transition-colors"
+                >
+                  <span className="font-semibold text-white truncate w-full">{cv.name}</span>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
+                      {getCVTemplate(cv.template_id!)?.name || cv.template_id}
+                    </span>
+                    <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
+                      {cv.template_locale}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-8 mx-auto max-w-md">
+              <p className="text-zinc-500 mb-6">No tienes ningún CV en formato plantilla.</p>
+              <Button onClick={onOpenTemplates} className="bg-teal-500 text-black hover:bg-teal-400">
+                Ir al catálogo de plantillas
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
