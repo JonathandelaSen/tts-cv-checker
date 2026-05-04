@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 TTS CV AI Checker
+# 🚀 ATS CV AI Checker
 
 **AI-driven analysis, optimization, and elevation of your CV.**
 
@@ -35,8 +35,8 @@ Get the project running on your local machine in just a few minutes.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/JonathandelaSen/tts-cv-ai-checker.git
-cd tts-cv-ai-checker
+git clone https://github.com/JonathandelaSen/ats-cv-ai-checker.git
+cd ats-cv-ai-checker
 npm install
 ```
 

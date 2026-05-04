@@ -1,4 +1,4 @@
-const GEMINI_API_KEY_STORAGE_KEY = "tts-cv-checker.geminiApiKey";
+const GEMINI_API_KEY_STORAGE_KEY = "ats-cv-ai-checker.geminiApiKey";
 
 function getLocalStorage() {
   if (typeof window === "undefined") return null;

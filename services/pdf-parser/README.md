@@ -1,6 +1,6 @@
 # ATS CV Python Parser
 
-Python PDF parser service for `tts-cv-ai-checker`. It exposes `POST /extract`,
+Python PDF parser service for `ats-cv-ai-checker`. It exposes `POST /extract`,
 downloads a PDF from Supabase Storage, parses it with `pdfminer.six`, and returns
 `{ "text": "...", "error": null }`.
 
