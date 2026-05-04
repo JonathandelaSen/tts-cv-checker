@@ -125,9 +125,6 @@ export default function TemplatesView({
 
   const selectTemplate = (templateId: CVTemplateId) => {
     setSelectedTemplateId(templateId);
-    if (!profile && activeCvId && hasGeminiApiKey && !generatingProfile) {
-      void generateProfile(false);
-    }
   };
 
   const pdfHref =
@@ -307,6 +304,10 @@ export default function TemplatesView({
                   Se creará un JSON estándar reutilizable. Cambiar de plantilla
                   después usará esta misma estructura.
                 </p>
+                <div className="mt-4 rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-300">
+                  <Sparkles className="mr-1 inline h-3 w-3" />
+                  Se usará la API de Gemini configurada para procesar el CV.
+                </div>
                 {hasGeminiApiKey ? (
                   <button
                     type="button"
