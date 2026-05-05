@@ -591,11 +591,13 @@ function CVTemplateDocument({
         <View style={s.body}>
           {profile.summary && (
             <Section title={labels.about} s={s}>
-              <Text style={s.summary}>
-                {isModern && basics.headline
-                  ? `${basics.headline}. ${profile.summary}`
-                  : profile.summary}
-              </Text>
+              <View style={s.item}>
+                <Text style={s.summary}>
+                  {isModern && basics.headline
+                    ? `${basics.headline}. ${profile.summary}`
+                    : profile.summary}
+                </Text>
+              </View>
             </Section>
           )}
           {hasItems(profile.experience) && (
