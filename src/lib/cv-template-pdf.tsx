@@ -1,5 +1,6 @@
 import {
   Document,
+  Link,
   Page,
   StyleSheet,
   Text,
@@ -188,6 +189,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     marginTop: 6,
   },
+  link: {
+    color: "#2d2d2d",
+    textDecoration: "none",
+  },
 });
 
 const hasItems = <T,>(items?: T[]) => Array.isArray(items) && items.length > 0;
@@ -266,13 +271,20 @@ function EducationPDF({ item }: { item: StandardCVEducation }) {
 }
 
 function NamedPDF({ item }: { item: StandardCVNamedItem }) {
+  const metaParts = [item.issuer, item.organization].filter(Boolean);
   return (
     <View style={styles.item} wrap={false}>
       <View style={styles.itemHead}>
         <View style={styles.itemHeadMain}>
           <Text style={styles.itemTitle}>{item.name}</Text>
           <Text style={styles.itemMeta}>
-            {[item.issuer, item.organization, item.url].filter(Boolean).join(" · ")}
+            {metaParts.join(" · ")}
+            {metaParts.length > 0 && item.url ? " · " : ""}
+            {item.url && (
+              <Link src={item.url} style={styles.link}>
+                {item.url}
+              </Link>
+            )}
           </Text>
         </View>
         <Text style={styles.itemDate}>{item.date}</Text>
@@ -311,7 +323,12 @@ function CVTemplateDocument({
             )}
           </View>
           <View style={styles.contact}>
-            {[basics.email, basics.phone, basics.location]
+            {basics.email && (
+              <Link src={`mailto:${basics.email}`} style={[styles.contactLine, styles.link]}>
+                {basics.email}
+              </Link>
+            )}
+            {[basics.phone, basics.location]
               .filter(Boolean)
               .map((item) => (
                 <Text key={item} style={styles.contactLine}>
@@ -319,9 +336,9 @@ function CVTemplateDocument({
                 </Text>
               ))}
             {basics.links?.map((link) => (
-              <Text key={link.url} style={styles.contactLine}>
+              <Link key={link.url} src={link.url} style={[styles.contactLine, styles.link]}>
                 {link.label || link.url}
-              </Text>
+              </Link>
             ))}
           </View>
         </View>

@@ -88,12 +88,17 @@ function EducationItem({ item }: { item: StandardCVEducation }) {
 }
 
 function NamedItem({ item }: { item: StandardCVNamedItem }) {
+  const metaParts = [item.issuer, item.organization].filter(Boolean);
   return (
     <article className="cvp-item cvp-small-item">
       <div className="cvp-item-head">
         <div>
           <h3>{item.name}</h3>
-          <p>{[item.issuer, item.organization, item.url].filter(Boolean).join(" · ")}</p>
+          <p>
+            {metaParts.join(" · ")}
+            {metaParts.length > 0 && item.url ? " · " : ""}
+            {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>}
+          </p>
         </div>
         <span>{item.date}</span>
       </div>
@@ -129,13 +134,16 @@ export default function CVTemplatePreview({
           {basics.headline && <p className="cvp-headline">{basics.headline}</p>}
         </div>
         <div className="cvp-contact">
-          {[basics.email, basics.phone, basics.location]
+          {basics.email && (
+            <a key={basics.email} href={`mailto:${basics.email}`}>{basics.email}</a>
+          )}
+          {[basics.phone, basics.location]
             .filter(Boolean)
             .map((item) => (
               <span key={item}>{item}</span>
             ))}
           {basics.links?.map((link) => (
-            <span key={link.url}>{link.label || link.url}</span>
+            <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer">{link.label || link.url}</a>
           ))}
         </div>
       </header>
