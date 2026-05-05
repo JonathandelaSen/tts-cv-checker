@@ -187,6 +187,15 @@ export default function CVTemplatePreview({
             ))}
           </Section>
         )}
+        {hasItems(profile.technicalSkills) && (
+          <Section title={labels.technicalSkills}>
+            <div className="cvp-tags">
+              {profile.technicalSkills?.map((skill, index) => (
+                <span key={index}>{skill}</span>
+              ))}
+            </div>
+          </Section>
+        )}
         {hasItems(profile.languages) && (
           <Section title={labels.languages}>
             <div className="cvp-tags">

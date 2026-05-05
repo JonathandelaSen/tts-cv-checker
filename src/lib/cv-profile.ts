@@ -70,6 +70,7 @@ export interface StandardCVProfile {
   projects?: StandardCVNamedItem[];
   awards?: StandardCVNamedItem[];
   publications?: StandardCVNamedItem[];
+  technicalSkills?: string[];
   volunteering?: StandardCVNamedItem[];
   [key: string]: unknown;
 }
@@ -218,6 +219,7 @@ export function normalizeStandardCVProfile(
     projects: normalizeArray(raw.projects, normalizeNamedItem),
     awards: normalizeArray(raw.awards, normalizeNamedItem),
     publications: normalizeArray(raw.publications, normalizeNamedItem),
+    technicalSkills: asStringArray(raw.technicalSkills),
     volunteering: normalizeArray(raw.volunteering, normalizeNamedItem),
   };
 }

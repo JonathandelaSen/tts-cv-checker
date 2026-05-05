@@ -36,7 +36,8 @@ export function parseEditedCVProfile(rawText: string): StandardCVProfile {
     Object.keys(normalized.basics ?? {}).length > 0 ||
     Boolean(normalized.experience?.length) ||
     Boolean(normalized.education?.length) ||
-    Boolean(normalized.skills?.length);
+    Boolean(normalized.skills?.length) ||
+    Boolean(normalized.technicalSkills?.length);
 
   if (!hasContent) {
     throw new Error("AI response did not contain a usable CV profile.");

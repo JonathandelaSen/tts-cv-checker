@@ -395,6 +395,17 @@ function CVTemplateDocument({
               ))}
             </Section>
           )}
+          {hasItems(profile.technicalSkills) && (
+            <Section title={labels.technicalSkills}>
+              <View style={styles.tagsContainer}>
+                {profile.technicalSkills?.map((skill, index) => (
+                  <Text key={index} style={styles.tag}>
+                    {skill}
+                  </Text>
+                ))}
+              </View>
+            </Section>
+          )}
           {hasItems(profile.languages) && (
             <Section title={labels.languages}>
               <View style={styles.tagsContainer}>

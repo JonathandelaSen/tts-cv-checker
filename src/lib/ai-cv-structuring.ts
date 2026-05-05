@@ -53,6 +53,7 @@ JSON format:
     }
   ],
   "skills": [{ "name": "string", "items": ["string"] }],
+  "technicalSkills": ["string"],
   "languages": [{ "name": "string", "level": "string" }],
   "certifications": [{ "name": "string", "issuer": "string", "date": "string", "url": "string", "description": "string", "bullets": ["string"] }],
   "projects": [{ "name": "string", "organization": "string", "date": "string", "url": "string", "description": "string", "bullets": ["string"] }],
