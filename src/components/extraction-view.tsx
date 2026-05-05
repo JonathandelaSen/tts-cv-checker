@@ -241,10 +241,11 @@ export default function ExtractionView({
                 </span>
               </button>
               <a
-                href={`${pdfUrl}?download=1`}
-                download={analysis.filename}
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all"
-                title="Descargar PDF original"
+                title="Ver PDF original"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden xs:inline">Descargar</span>

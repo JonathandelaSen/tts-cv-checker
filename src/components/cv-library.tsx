@@ -301,9 +301,11 @@ export default function CVLibrary({
                     </button>
                   )}
                   <a
-                    href={`/api/cvs/${selected.id}/${selected.type === "template" ? "template-pdf" : "pdf"}?download=1`}
+                    href={`/api/cvs/${selected.id}/${selected.type === "template" ? "template-pdf" : "pdf"}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
-                    title="Descargar PDF"
+                    title="Ver PDF"
                   >
                     <Download className="h-4 w-4" />
                   </a>

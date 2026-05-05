@@ -47,7 +47,7 @@ Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
   page: {
-    padding: 62.36, // 22mm
+    padding: 42.52, // 15mm
     fontFamily: "InterPDF",
     fontWeight: 400,
     fontSize: 9, // 11.3px * 0.75
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: "InterPDFExtraBold",
-    fontSize: 28.5, // 38px * 0.75
+    fontSize: 24, // 32px * 0.75
     fontWeight: 400,
     color: "#101010",
     marginBottom: 6,
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
   contact: {
     flexShrink: 0,
-    width: 165,
+    alignItems: "flex-end",
     color: "#4f4f4f",
     fontSize: 9, // 12px * 0.75
     textAlign: "right",
