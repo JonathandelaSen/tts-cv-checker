@@ -19,6 +19,8 @@ It's not just a parser; it's a complete toolkit for your resume:
 
 - 🎯 **Targeted Job Matching:** Paste a job description and get an ATS-style match rate and targeted recommendations.
 - 📊 **General Profile Review:** Receive a comprehensive evaluation and a custom questionnaire to improve your CV.
+- 🎨 **AI-Powered Templates:** Choose from professional designs and let the AI automatically structure and fill them with your CV data.
+- ✍️ **Intelligent CV Editor:** Refine your resume with natural language instructions. Shorten sections, improve clarity, or change the tone instantly with AI.
 - 📚 **Smart CV Library:** Upload, preview (PDF support), and manage multiple versions of your resume seamlessly.
 
 ---
