@@ -43,6 +43,7 @@ interface AIAnalysisViewProps {
       id: string;
       name: string;
       filename: string;
+      type?: string;
     } | null;
     title: string;
     filename: string;
@@ -109,7 +110,7 @@ export default function AIAnalysisView({ analysis, onDelete }: AIAnalysisViewPro
   const handleExport = () => {
     const cvName = analysis.cv?.name ?? analysis.filename;
     const cvUrl = analysis.cv
-      ? `${window.location.origin}/api/cvs/${analysis.cv.id}/pdf`
+      ? `${window.location.origin}/api/cvs/${analysis.cv.id}/${analysis.cv.type === "template" ? "template-pdf" : "pdf"}`
       : null;
     const report = `
 INFORME DE ANÁLISIS ATS
@@ -334,7 +335,7 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
               </div>
             </div>
             <a
-              href={`/api/cvs/${analysis.cv?.id ?? analysis.cv_id}/pdf`}
+              href={analysis.cv?.type === "template" ? `/api/cvs/${analysis.cv?.id}/template-pdf` : `/api/cvs/${analysis.cv?.id ?? analysis.cv_id}/pdf`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-500/20"

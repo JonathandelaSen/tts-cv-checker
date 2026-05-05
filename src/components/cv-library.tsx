@@ -128,7 +128,7 @@ export default function CVLibrary({
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="mx-auto grid h-full w-full max-w-6xl gap-6 lg:grid-cols-[360px_1fr]"
+        className="grid h-full w-full gap-6 lg:grid-cols-[360px_1fr]"
       >
         <section className="flex min-h-0 flex-col">
           <div className="mb-5">
@@ -289,13 +289,25 @@ export default function CVLibrary({
                     {selected.filename}
                   </p>
                 </div>
-                <a
-                  href={`/api/cvs/${selected.id}/pdf?download=1`}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
-                  title="Descargar PDF"
-                >
-                  <Download className="h-4 w-4" />
-                </a>
+                <div className="flex shrink-0 items-center gap-2">
+                  {selected.type === "template" && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenEditor(selected.id)}
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-teal-500/20 bg-teal-500/10 px-3 text-xs font-semibold text-teal-300 transition-colors hover:bg-teal-500/20"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Editar con IA
+                    </button>
+                  )}
+                  <a
+                    href={`/api/cvs/${selected.id}/${selected.type === "template" ? "template-pdf" : "pdf"}?download=1`}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
+                    title="Descargar PDF"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                </div>
               </div>
               <div className="border-b border-white/[0.06] px-4 py-3">
                 <div className="mb-4">
@@ -374,7 +386,7 @@ export default function CVLibrary({
                 )}
               </div>
               <iframe
-                src={`/api/cvs/${selected.id}/pdf#toolbar=0`}
+                src={`/api/cvs/${selected.id}/${selected.type === "template" ? "template-pdf" : "pdf"}#toolbar=0`}
                 className="min-h-0 flex-1 bg-zinc-950"
                 title="Vista previa del CV"
               />

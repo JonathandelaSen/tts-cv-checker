@@ -37,6 +37,7 @@ interface FullAnalysis {
     id: string;
     name: string;
     filename: string;
+    type?: string;
   } | null;
   title: string;
   filename: string;

@@ -19,6 +19,14 @@ export async function GET(
     const { id } = await params;
     const cv = await getCV(supabase, id, user.id);
 
+    if (cv?.type === "template") {
+      const targetUrl = new URL(`/api/cvs/${id}/template-pdf`, req.url);
+      if (req.nextUrl.searchParams.has("download")) {
+        targetUrl.searchParams.set("download", "1");
+      }
+      return NextResponse.redirect(targetUrl);
+    }
+
     if (!cv?.pdf_storage_path) {
       return NextResponse.json(
         { error: "PDF no encontrado" },

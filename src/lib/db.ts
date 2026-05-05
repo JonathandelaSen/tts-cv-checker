@@ -174,13 +174,21 @@ function normalizeAnalysis(row: Record<string, unknown>): Analysis {
 // CV Helpers
 // ---------------------------------------------------------------------------
 
-export interface CreateCVInput extends ExtractedPdfText {
+export interface CreateCVInput extends Partial<ExtractedPdfText> {
   id: string;
   user_id: string;
   name: string;
-  filename: string;
-  file_size: number | null;
-  pdf_storage_path: string | null;
+  filename?: string | null;
+  file_size?: number | null;
+  pdf_storage_path?: string | null;
+  type?: CVType;
+  source_cv_id?: string | null;
+  template_id?: string | null;
+  template_locale?: string | null;
+  schema_version?: string | null;
+  source_text_hash?: string | null;
+  ai_model?: string | null;
+  profile?: StandardCVProfile | null;
 }
 
 export async function createCV(

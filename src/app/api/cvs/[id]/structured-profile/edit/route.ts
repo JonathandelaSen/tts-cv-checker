@@ -14,6 +14,8 @@ import {
   type CVTemplateLocale,
 } from "@/lib/cv-templates";
 
+export const maxDuration = 60;
+
 function parseStringArray(value: string | null): string[] {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -41,7 +43,7 @@ export async function POST(
     const { id } = await params;
     const {
       geminiApiKey,
-      model = "gemini-2.5-flash",
+      model = "gemini-3.1-pro-preview",
       instruction,
       templateId,
       locale,

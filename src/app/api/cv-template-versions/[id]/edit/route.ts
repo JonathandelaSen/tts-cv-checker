@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getCV,
+  getCVTemplateVersion,
   getLatestRecommendationAnalysisForCV,
-  updateCVProfile,
+  updateCVTemplateVersion,
 } from "@/lib/db";
 import { editCVProfileWithAI } from "@/lib/ai-cv-editing";
 import { getErrorMessage } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
-
-export const maxDuration = 60;
 
 function parseStringArray(value: string | null): string[] {
   try {
@@ -58,18 +56,16 @@ export async function POST(
       );
     }
 
-    const cv = await getCV(supabase, id, user.id);
-    if (!cv || cv.type !== "template") {
-      return NextResponse.json({ error: "Template CV not found" }, { status: 404 });
-    }
-    if (!cv.profile) {
-      return NextResponse.json({ error: "CV has no profile" }, { status: 400 });
+    const version = await getCVTemplateVersion(supabase, id, user.id);
+    if (!version) {
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
-    const sourceCvId = cv.source_cv_id;
-    const latestAnalysis = sourceCvId
-      ? await getLatestRecommendationAnalysisForCV(supabase, sourceCvId, user.id)
-      : null;
+    const latestAnalysis = await getLatestRecommendationAnalysisForCV(
+      supabase,
+      version.source_cv_id,
+      user.id
+    );
     const recommendations = latestAnalysis
       ? [
           ...parseStringArray(latestAnalysis.ai_improvements),
@@ -82,23 +78,23 @@ export async function POST(
     const editedProfile = await editCVProfileWithAI({
       apiKey: geminiApiKey.trim(),
       model,
-      profile: cv.profile,
+      profile: version.profile,
       instruction: instruction.trim(),
-      templateId: (cv.template_id ?? "compact") as "compact",
-      locale: (cv.template_locale ?? "es") as "es" | "en",
+      templateId: version.template_id,
+      locale: version.template_locale,
       recommendations,
     });
 
-    const updated = await updateCVProfile(supabase, id, user.id, {
+    const updated = await updateCVTemplateVersion(supabase, id, user.id, {
       ai_model: model,
       profile: editedProfile,
     });
 
     return NextResponse.json({ version: updated });
   } catch (error: unknown) {
-    console.error("CV edit error:", error);
+    console.error("Template version edit error:", error);
     return NextResponse.json(
-      { error: "Failed to edit CV", details: getErrorMessage(error) },
+      { error: "Failed to edit CV version", details: getErrorMessage(error) },
       { status: 500 }
     );
   }

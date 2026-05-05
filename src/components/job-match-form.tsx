@@ -93,12 +93,11 @@ export default function JobMatchForm({
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="w-full h-10 px-4 rounded-xl bg-[#0a0a12] border border-white/[0.06] text-sm text-zinc-300 focus:outline-none focus:border-emerald-500/40 appearance-none cursor-pointer"
               >
-                <option value="gemini-3.1-pro-preview">
-                  Gemini 3.1 Pro Preview (Más Potente)
-                </option>
-                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
                 <option value="gemini-2.5-flash">
                   Gemini 2.5 Flash (Rápido)
+                </option>
+                <option value="gemini-3.1-pro-preview">
+                  Gemini 3.1 Pro Preview (Más Potente)
                 </option>
               </select>
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">

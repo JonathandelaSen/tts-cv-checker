@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getCV } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { getCVTemplate, type CVTemplateId, type CVTemplateLocale } from "@/lib/cv-templates";
@@ -6,7 +6,7 @@ import { renderTemplatePDF } from "@/lib/cv-template-pdf";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
-  _req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -39,10 +39,14 @@ export async function GET(
     });
 
     const filename = `${cv.name.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
+    const disposition = req.nextUrl.searchParams.get("download")
+      ? "attachment"
+      : "inline";
+
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `${disposition}; filename="${filename}"`,
       },
     });
   } catch (error: unknown) {

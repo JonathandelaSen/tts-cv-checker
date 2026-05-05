@@ -36,6 +36,7 @@ interface ExtractionViewProps {
     filename: string;
     ai_score: number | null;
     job_url?: string | null;
+    cv?: { id?: string; name?: string; filename?: string; type?: string } | null;
   };
   onAIAnalysisComplete: () => void;
   geminiApiKey: string;
@@ -113,7 +114,9 @@ export default function ExtractionView({
   const currentText = getTextForTab(activeTab);
   const currentError = getErrorForTab(activeTab);
   const pdfUrl = analysis.cv_id
-    ? `/api/cvs/${analysis.cv_id}/pdf`
+    ? analysis.cv?.type === "template"
+      ? `/api/cvs/${analysis.cv_id}/template-pdf`
+      : `/api/cvs/${analysis.cv_id}/pdf`
     : `/api/analyses/${analysis.id}/pdf`;
 
   const wordCount = currentText

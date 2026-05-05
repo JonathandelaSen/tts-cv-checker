@@ -70,7 +70,7 @@ export default function TemplatesView({
           templateId: selectedTemplate.templateId,
           locale,
           geminiApiKey,
-          model: "gemini-2.5-flash", // Using the correct default
+          model: "gemini-3.1-pro-preview", // Using the correct default
         }),
       });
 
@@ -110,7 +110,7 @@ export default function TemplatesView({
           </div>
         )}
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2">
           {CV_TEMPLATES.map((template) => (
             <motion.div
               key={template.templateId}
@@ -118,14 +118,22 @@ export default function TemplatesView({
               animate={{ opacity: 1, y: 0 }}
               className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition-all hover:border-teal-500/30 hover:bg-white/[0.04]"
             >
-              <div className="aspect-[3/4] overflow-hidden bg-zinc-900 p-4">
-                <div className="h-full w-full origin-top scale-[0.4] overflow-hidden rounded-lg bg-white shadow-2xl transition-transform group-hover:scale-[0.42]">
-                  <CVTemplatePreview
-                    profile={template.fixtureProfile}
-                    templateId={template.templateId}
-                    locale="es"
-                  />
-                </div>
+              <div className="w-full bg-zinc-900 p-6 sm:p-8 flex items-center justify-center">
+                <svg 
+                  className="w-full h-auto max-w-full rounded-sm shadow-2xl transition-transform duration-300 ease-out group-hover:scale-[1.02]" 
+                  viewBox="0 0 794 1123"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <foreignObject width="794" height="1123">
+                    <div className="w-[794px] h-[1123px] bg-white overflow-hidden">
+                      <CVTemplatePreview
+                        profile={template.fixtureProfile}
+                        templateId={template.templateId}
+                        locale="es"
+                      />
+                    </div>
+                  </foreignObject>
+                </svg>
               </div>
 
               <div className="flex flex-1 flex-col p-6">

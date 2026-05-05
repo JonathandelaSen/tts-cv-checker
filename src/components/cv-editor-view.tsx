@@ -77,7 +77,7 @@ export default function CVEditorView({
   const [manuallySelectedVersionId, setManuallySelectedVersionId] = useState<string | null>(null);
   const [editedVersion, setEditedVersion] = useState<CVSummary | null>(null);
   const [recommendationAnalysis, setRecommendationAnalysis] = useState<CVRecommendationAnalysis | null>(null);
-  const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+  const [selectedModel, setSelectedModel] = useState("gemini-3.1-pro-preview");
   const [editInstruction, setEditInstruction] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingLocale, setSavingLocale] = useState(false);
@@ -154,7 +154,16 @@ export default function CVEditorView({
           instruction: instruction.trim(),
         }),
       });
-      const data = await res.json();
+      
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("Non-JSON response from edit API:", text);
+        throw new Error(`El servidor devolvió un error inesperado (Status: ${res.status}). Puede ser un timeout o un error de conexión.`);
+      }
+
       if (!res.ok) {
         throw new Error(data.error || data.details || "No se pudo editar el CV");
       }
@@ -268,8 +277,7 @@ CV Original
             className="h-9 gap-2 border border-teal-500/20 bg-teal-500/5 text-xs text-teal-400 hover:bg-teal-500/10"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Guardar en Mis CVs</span>
-          </Button>
+            <span className="hidden sm:inline">Guardar nueva versión</span>          </Button>
 
           <div className="hidden h-4 w-[1px] bg-white/10 md:block" />
 
@@ -364,8 +372,8 @@ CV Original
                         onChange={(e) => setSelectedModel(e.target.value)}
                         className="bg-transparent text-[11px] font-medium text-zinc-500 focus:outline-none cursor-pointer"
                       >
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                         <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                       </select>
                     </header>
 
