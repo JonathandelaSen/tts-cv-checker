@@ -28,6 +28,16 @@ Font.register({
 });
 
 Font.register({
+  family: "InterPDFSemiBold",
+  src: path.join(process.cwd(), "public/fonts/Inter-SemiBold.ttf"),
+});
+
+Font.register({
+  family: "InterPDFBold",
+  src: path.join(process.cwd(), "public/fonts/Inter-Bold.ttf"),
+});
+
+Font.register({
   family: "InterPDFExtraBold",
   src: path.join(process.cwd(), "public/fonts/Inter-ExtraBold.ttf"),
 });
@@ -121,11 +131,12 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   itemTitle: {
-    fontFamily: "InterPDFExtraBold",
-    fontWeight: 400,
+    fontFamily: "InterPDFSemiBold",
+    fontWeight: 600,
     fontSize: 9.75, // 12px * 0.75
     color: "#161616",
     lineHeight: 1.2,
+    marginBottom: 3,
   },
   itemMeta: {
     color: "#5a5a5a",
@@ -163,11 +174,11 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   skillTitle: {
-    fontFamily: "InterPDFExtraBold",
-    fontWeight: 400,
+    fontFamily: "InterPDFSemiBold",
+    fontWeight: 600,
     fontSize: 9.75,
     color: "#161616",
-    marginBottom: 1.5,
+    marginBottom: 3,
   },
   skillItems: {
     color: "#2d2d2d",
