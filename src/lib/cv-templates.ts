@@ -1,6 +1,6 @@
 import type { StandardCVProfile } from "@/lib/cv-profile";
 
-export type CVTemplateId = "compact";
+export type CVTemplateId = "compact" | "classic" | "modern";
 export type CVTemplateLocale = "es" | "en";
 
 export interface CVTemplateDefinition {
@@ -17,7 +17,7 @@ export const SECTION_LABELS: Record<
   Record<string, string>
 > = {
   es: {
-    about: "Sobre mí",
+    about: "Resumen Profesional",
     experience: "Experiencia",
     education: "Educación",
     skills: "Competencias",
@@ -30,7 +30,7 @@ export const SECTION_LABELS: Record<
     volunteering: "Voluntariado",
   },
   en: {
-    about: "About me",
+    about: "Summary",
     experience: "Experience",
     education: "Education",
     skills: "Skills",
@@ -108,7 +108,32 @@ const loremProfile: StandardCVProfile = {
       bullets: ["Standardized component usage guidance across squads."],
     },
   ],
+  awards: [
+    { name: "Best UX Innovation", issuer: "Design Awards EU", date: "2023" },
+  ],
+  volunteering: [
+    {
+      name: "UX Mentor",
+      organization: "ADPList",
+      description: "Mentoring junior designers transitioning into product roles.",
+    },
+  ],
 };
+
+const ALL_SECTIONS: Array<keyof StandardCVProfile> = [
+  "basics",
+  "summary",
+  "experience",
+  "education",
+  "skills",
+  "technicalSkills",
+  "languages",
+  "certifications",
+  "projects",
+  "awards",
+  "publications",
+  "volunteering",
+];
 
 export const CV_TEMPLATES: CVTemplateDefinition[] = [
   {
@@ -116,17 +141,25 @@ export const CV_TEMPLATES: CVTemplateDefinition[] = [
     name: "Linea",
     description:
       "A single-column resume optimized for fast scanning and keyword visibility.",
-    supportedSections: [
-      "basics",
-      "summary",
-      "experience",
-      "education",
-      "skills",
-      "technicalSkills",
-      "languages",
-      "certifications",
-      "projects",
-    ],
+    supportedSections: ALL_SECTIONS,
+    locales: ["es", "en"],
+    fixtureProfile: loremProfile,
+  },
+  {
+    templateId: "classic",
+    name: "Marco",
+    description:
+      "Traditional serif layout with centered header. Ideal for senior roles and formal industries.",
+    supportedSections: ALL_SECTIONS,
+    locales: ["es", "en"],
+    fixtureProfile: loremProfile,
+  },
+  {
+    templateId: "modern",
+    name: "Pulso",
+    description:
+      "Bold contemporary design with strong typographic hierarchy. Great for tech and creative roles.",
+    supportedSections: ALL_SECTIONS,
     locales: ["es", "en"],
     fixtureProfile: loremProfile,
   },

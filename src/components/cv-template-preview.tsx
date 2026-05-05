@@ -45,13 +45,17 @@ function Section({
   );
 }
 
-function ExperienceItem({ item }: { item: StandardCVExperience }) {
+function ExperienceItem({ item, companyFirst }: { item: StandardCVExperience; companyFirst?: boolean }) {
   return (
     <article className="cvp-item">
       <div className="cvp-item-head">
         <div>
-          <h3>{item.role || item.company}</h3>
-          <p>{[item.company, item.location].filter(Boolean).join(" · ")}</p>
+          <h3>{companyFirst ? (item.company || item.role) : (item.role || item.company)}</h3>
+          <p>
+            {companyFirst
+              ? [item.role, item.location].filter(Boolean).join(" · ")
+              : [item.company, item.location].filter(Boolean).join(" · ")}
+          </p>
         </div>
         <span>{dateRange(item.dates)}</span>
       </div>
@@ -112,6 +116,12 @@ function NamedItem({ item }: { item: StandardCVNamedItem }) {
   );
 }
 
+const TEMPLATE_CLASS_MAP: Record<CVTemplateId, string> = {
+  compact: "cvp-compact",
+  classic: "cvp-classic",
+  modern: "cvp-modern",
+};
+
 export default function CVTemplatePreview({
   profile,
   templateId,
@@ -120,18 +130,20 @@ export default function CVTemplatePreview({
 }: CVTemplatePreviewProps) {
   const labels = getSectionLabels(locale);
   const basics = profile.basics ?? {};
-  const compact = templateId === "compact";
+  const isModern = templateId === "modern";
+  const isClassic = templateId === "classic";
+  const skillSeparator = isModern ? " / " : ", ";
 
   return (
     <div
-      className={`cvp-shell ${compact ? "cvp-compact" : "cvp-executive"} ${
+      className={`cvp-shell ${TEMPLATE_CLASS_MAP[templateId]} ${
         scale === "card" ? "cvp-card-scale" : ""
       }`}
     >
       <header className="cvp-header">
         <div>
           <h1>{basics.name || "Untitled CV"}</h1>
-          {basics.headline && <p className="cvp-headline">{basics.headline}</p>}
+          {basics.headline && !isModern && <p className="cvp-headline">{basics.headline}</p>}
         </div>
         <div className="cvp-contact">
           {basics.email && (
@@ -151,25 +163,40 @@ export default function CVTemplatePreview({
       <main className="cvp-body">
         {profile.summary && (
           <Section title={labels.about}>
-            <p className="cvp-summary">{profile.summary}</p>
+            <p className="cvp-summary">
+              {isModern && basics.headline ? `${basics.headline}. ${profile.summary}` : profile.summary}
+            </p>
           </Section>
         )}
         {hasItems(profile.skills) && (
           <Section title={labels.skills}>
-            <div className="cvp-skills">
-              {profile.skills?.map((group, index) => (
-                <div key={index}>
-                  {group.name && <h3>{group.name}</h3>}
-                  <p>{group.items?.join(", ")}</p>
-                </div>
-              ))}
-            </div>
+            {isClassic ? (
+              <p className="cvp-summary">
+                {profile.skills?.flatMap((g) => g.items || []).join(", ")}
+              </p>
+            ) : (
+              <div className="cvp-skills">
+                {profile.skills?.map((group, index) => (
+                  <div key={index}>
+                    {group.name && <h3>{group.name}</h3>}
+                    <p>{group.items?.join(skillSeparator)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
+        {hasItems(profile.technicalSkills) && (
+          <Section title={labels.technicalSkills}>
+            <p className="cvp-summary">
+              {profile.technicalSkills?.join(skillSeparator)}
+            </p>
           </Section>
         )}
         {hasItems(profile.experience) && (
           <Section title={labels.experience}>
             {profile.experience?.map((item, index) => (
-              <ExperienceItem key={index} item={item} />
+              <ExperienceItem key={index} item={item} companyFirst={isModern} />
             ))}
           </Section>
         )}
@@ -187,15 +214,6 @@ export default function CVTemplatePreview({
             ))}
           </Section>
         )}
-        {hasItems(profile.technicalSkills) && (
-          <Section title={labels.technicalSkills}>
-            <div className="cvp-tags">
-              {profile.technicalSkills?.map((skill, index) => (
-                <span key={index}>{skill}</span>
-              ))}
-            </div>
-          </Section>
-        )}
         {hasItems(profile.languages) && (
           <Section title={labels.languages}>
             <div className="cvp-tags">
@@ -210,6 +228,27 @@ export default function CVTemplatePreview({
         {hasItems(profile.certifications) && (
           <Section title={labels.certifications}>
             {profile.certifications?.map((item, index) => (
+              <NamedItem key={index} item={item} />
+            ))}
+          </Section>
+        )}
+        {hasItems(profile.awards) && (
+          <Section title={labels.awards}>
+            {profile.awards?.map((item, index) => (
+              <NamedItem key={index} item={item} />
+            ))}
+          </Section>
+        )}
+        {hasItems(profile.publications) && (
+          <Section title={labels.publications}>
+            {profile.publications?.map((item, index) => (
+              <NamedItem key={index} item={item} />
+            ))}
+          </Section>
+        )}
+        {hasItems(profile.volunteering) && (
+          <Section title={labels.volunteering}>
+            {profile.volunteering?.map((item, index) => (
               <NamedItem key={index} item={item} />
             ))}
           </Section>

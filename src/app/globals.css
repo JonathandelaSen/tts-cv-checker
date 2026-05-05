@@ -293,3 +293,108 @@
   border: 1px solid #ded8ce;
   padding: 4px 7px;
 }
+
+/* ─── Classic (Marco) ─── */
+
+.cvp-classic {
+  font-family: Georgia, "Times New Roman", serif;
+  background: #ffffff;
+}
+
+.cvp-classic .cvp-header {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.cvp-classic .cvp-contact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  min-width: unset;
+  gap: 6px;
+  text-align: center;
+}
+
+.cvp-classic .cvp-contact span::before,
+.cvp-classic .cvp-contact a + a::before,
+.cvp-classic .cvp-contact a + span::before,
+.cvp-classic .cvp-contact span + a::before {
+  content: "·";
+  margin-right: 6px;
+}
+
+.cvp-classic .cvp-section h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1a1a2e;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #c8c4bc;
+}
+
+.cvp-classic .cvp-header h1 {
+  color: #1a1a2e;
+}
+
+.cvp-classic .cvp-item h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+}
+
+/* ─── Modern (Pulso) ─── */
+
+.cvp-modern {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #ffffff;
+  font-size: 14px;
+}
+
+.cvp-modern .cvp-header {
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: none;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.cvp-modern .cvp-header h1 {
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.cvp-modern .cvp-contact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  min-width: unset;
+  gap: 8px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.cvp-modern .cvp-section h2 {
+  border-bottom: none;
+  border-left: 4px solid #0f766e;
+  padding-left: 10px;
+  padding-bottom: 0;
+  font-size: 12px;
+  color: #0f766e;
+}
+
+.cvp-modern .cvp-item h3,
+.cvp-modern .cvp-skills h3 {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.cvp-modern .cvp-summary,
+.cvp-modern .cvp-item li,
+.cvp-modern .cvp-skills p,
+.cvp-modern .cvp-tags span {
+  font-size: 14px;
+}
