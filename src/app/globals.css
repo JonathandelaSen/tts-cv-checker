@@ -226,7 +226,7 @@
   padding-bottom: 6px;
   color: #161616;
   font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -247,7 +247,7 @@
 .cvp-skills h3 {
   color: #161616;
   font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -263,7 +263,7 @@
 .cvp-skills p,
 .cvp-tags span {
   color: #2d2d2d;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;
 }

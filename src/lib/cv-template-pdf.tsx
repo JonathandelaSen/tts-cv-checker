@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     padding: 62.36, // 22mm
     fontFamily: "InterPDF",
     fontWeight: 400,
-    fontSize: 9.75, // 13px * 0.75
+    fontSize: 9, // 11.3px * 0.75
     lineHeight: 1.55,
     color: "#2d2d2d",
     backgroundColor: "#ffffff",
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: "InterPDFExtraBold",
     fontWeight: 400,
-    fontSize: 9, // 12px * 0.75
+    fontSize: 11.25, // 17.3px * 0.75
     letterSpacing: 0,
     textTransform: "uppercase",
     color: "#161616",
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   },
   summary: {
     color: "#2d2d2d",
-    fontSize: 9.75,
+    fontSize: 9,
     lineHeight: 1.55,
   },
   item: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontFamily: "InterPDFExtraBold",
     fontWeight: 400,
-    fontSize: 11.25, // 15px * 0.75
+    fontSize: 9.75, // 12px * 0.75
     color: "#161616",
     lineHeight: 1.2,
   },
@@ -146,13 +146,13 @@ const styles = StyleSheet.create({
   },
   bulletDot: {
     width: 11,
-    fontSize: 9.75,
+    fontSize: 9,
     color: "#2d2d2d",
   },
   bulletText: {
     flex: 1,
     color: "#2d2d2d",
-    fontSize: 9.75,
+    fontSize: 9,
     lineHeight: 1.55,
   },
   skillsGrid: {
@@ -165,18 +165,18 @@ const styles = StyleSheet.create({
   skillTitle: {
     fontFamily: "InterPDFExtraBold",
     fontWeight: 400,
-    fontSize: 11.25,
+    fontSize: 9.75,
     color: "#161616",
     marginBottom: 1.5,
   },
   skillItems: {
     color: "#2d2d2d",
-    fontSize: 9.75,
+    fontSize: 9,
     lineHeight: 1.55,
   },
   tag: {
     color: "#2d2d2d",
-    fontSize: 9.75,
+    fontSize: 9,
     borderWidth: 0.75,
     borderColor: "#ded8ce",
     paddingVertical: 3,
