@@ -4,19 +4,15 @@ import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Briefcase,
   CheckCircle2,
   ChevronRight,
-  Cpu,
   FileText,
   Loader2,
-  MessageSquare,
-  Sparkles,
   UploadCloud,
   Zap,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
-import type { AIContext, AnalysisMode, CVSummary } from "@/lib/db";
+import type { CVSummary } from "@/lib/db";
 
 interface NewAnalysisFlowProps {
   cvs: CVSummary[];
@@ -25,6 +21,11 @@ interface NewAnalysisFlowProps {
 }
 
 type CVSource = "existing" | "upload";
+
+function getCVSourceLabel(cv: CVSummary) {
+  if (cv.type === "template") return "Plantilla";
+  return cv.filename ?? "PDF original";
+}
 
 export default function NewAnalysisFlow({
   cvs,
@@ -185,7 +186,7 @@ export default function NewAnalysisFlow({
               >
                 {cvs.map((cv) => (
                   <option key={cv.id} value={cv.id}>
-                    {cv.name} · {cv.filename}
+                    {cv.name} · {getCVSourceLabel(cv)}
                   </option>
                 ))}
               </select>
@@ -193,7 +194,9 @@ export default function NewAnalysisFlow({
             </div>
             {selectedCv && (
               <p className="mt-2 text-xs text-zinc-600">
-                PDF original: {selectedCv.filename}
+                {selectedCv.type === "template"
+                  ? "Versión generada desde plantilla."
+                  : `PDF original: ${selectedCv.filename ?? "Sin nombre de archivo"}`}
               </p>
             )}
           </section>

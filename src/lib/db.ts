@@ -602,6 +602,24 @@ export async function listAnalyses(
   return (data ?? []) as AnalysisSummary[];
 }
 
+export async function updateAnalysis(
+  supabase: SupabaseClient,
+  id: string,
+  userId: string,
+  data: Partial<Pick<Analysis, "job_url" | "title">>
+): Promise<Analysis | null> {
+  const { data: analysis, error } = await supabase
+    .from("analyses")
+    .update(data)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return analysis ? normalizeAnalysis(analysis as Record<string, unknown>) : null;
+}
+
 export async function deleteAnalysis(
   supabase: SupabaseClient,
   id: string,

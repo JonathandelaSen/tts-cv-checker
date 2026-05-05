@@ -232,6 +232,121 @@ export function getBestCVText(input: {
   return input.text_python || input.text_pdfjs || input.text_node || null;
 }
 
+function joinParts(parts: Array<string | undefined>): string {
+  return parts.filter(Boolean).join(" | ");
+}
+
+function pushSection(
+  lines: string[],
+  title: string,
+  values: Array<string | undefined>
+) {
+  const cleaned = values
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (cleaned.length === 0) return;
+  lines.push(title, ...cleaned, "");
+}
+
+export function profileToPlainText(profile: StandardCVProfile | null): string | null {
+  if (!profile) return null;
+
+  const lines: string[] = [];
+  const basics = profile.basics;
+  pushSection(lines, "Datos personales", [
+    basics?.name,
+    basics?.headline,
+    basics?.email,
+    basics?.phone,
+    basics?.location,
+    ...(basics?.links ?? []).map((link) => joinParts([link.label, link.url])),
+  ]);
+
+  pushSection(lines, "Resumen", [profile.summary]);
+
+  pushSection(
+    lines,
+    "Experiencia",
+    (profile.experience ?? []).flatMap((item) => [
+      joinParts([
+        item.role,
+        item.company,
+        item.location,
+        item.dates?.start || item.dates?.end
+          ? `${item.dates?.start ?? ""} - ${
+              item.dates?.current ? "Actualidad" : (item.dates?.end ?? "")
+            }`
+          : undefined,
+      ]),
+      ...(item.bullets ?? []),
+    ])
+  );
+
+  pushSection(
+    lines,
+    "Educacion",
+    (profile.education ?? []).flatMap((item) => [
+      joinParts([
+        item.degree,
+        item.field,
+        item.institution,
+        item.location,
+        item.dates?.start || item.dates?.end
+          ? `${item.dates?.start ?? ""} - ${
+              item.dates?.current ? "Actualidad" : (item.dates?.end ?? "")
+            }`
+          : undefined,
+      ]),
+      ...(item.details ?? []),
+    ])
+  );
+
+  pushSection(
+    lines,
+    "Habilidades",
+    [
+      ...(profile.skills ?? []).flatMap((group) => [
+        joinParts([group.name, ...(group.items ?? [])]),
+      ]),
+      ...(profile.technicalSkills ?? []),
+    ]
+  );
+
+  pushSection(
+    lines,
+    "Idiomas",
+    (profile.languages ?? []).map((item) => joinParts([item.name, item.level]))
+  );
+
+  for (const [title, items] of [
+    ["Certificaciones", profile.certifications],
+    ["Proyectos", profile.projects],
+    ["Premios", profile.awards],
+    ["Publicaciones", profile.publications],
+    ["Voluntariado", profile.volunteering],
+  ] as const) {
+    pushSection(
+      lines,
+      title,
+      (items ?? []).flatMap((item) => [
+        joinParts([
+          item.name,
+          item.issuer,
+          item.organization,
+          item.date,
+          item.url,
+        ]),
+        item.description,
+        ...(item.bullets ?? []),
+      ])
+    );
+  }
+
+  const text = lines.join("\n").trim();
+  return text || null;
+}
+
 export function getCVSourceTextHash(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }

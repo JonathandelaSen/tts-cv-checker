@@ -53,6 +53,16 @@ const newAnalysisFlowSource = readFileSync(
   "utf8"
 );
 
+const adminObservabilitySource = readFileSync(
+  new URL("../src/components/admin-observability-dashboard.tsx", import.meta.url),
+  "utf8"
+);
+
+const appShellSource = readFileSync(
+  new URL("../src/components/app-shell.tsx", import.meta.url),
+  "utf8"
+);
+
 test("observability migration creates admin and processing event tables with RLS", () => {
   assert.match(migrationSource, /create table public\.admin_users/);
   assert.match(migrationSource, /create table public\.processing_events/);
@@ -154,4 +164,45 @@ test("new analysis flow can create an extraction without a Gemini API key", () =
   );
   assert.doesNotMatch(newAnalysisFlowSource, /disabled=\{loading \|\| !hasGeminiApiKey\}/);
   assert.match(newAnalysisFlowSource, /Crear extracción/);
+});
+
+test("new analysis flow receives every saved CV including template versions", () => {
+  const flowStart = appShellSource.indexOf("<NewAnalysisFlow");
+  const flowEnd = appShellSource.indexOf("/>", flowStart);
+  const flowProps = appShellSource.slice(flowStart, flowEnd);
+
+  assert.match(flowProps, /cvs=\{cvs\}/);
+  assert.doesNotMatch(
+    flowProps,
+    /cvs=\{cvs\.filter\(c => c\.type === "uploaded"\)\}/
+  );
+  assert.match(newAnalysisFlowSource, /cv\.type === "template"/);
+  assert.match(newAnalysisFlowSource, /Plantilla/);
+});
+
+test("template CVs create analyses by parsing their rendered PDF", () => {
+  assert.match(analysesRouteSource, /cv\.type === "template"/);
+  assert.match(analysesRouteSource, /renderTemplatePDF/);
+  assert.match(analysesRouteSource, /extractPdfText\(templatePdfBuffer/);
+  assert.match(
+    analysesRouteSource,
+    /text_node:\s*analysisExtraction\.text_node/
+  );
+  assert.doesNotMatch(analysesRouteSource, /source:\s*"template_profile"/);
+});
+
+test("analysis creation records the chosen CV text extraction source", () => {
+  const sourceEventIndex = analysesRouteSource.indexOf('stage: "cv_text_extraction"');
+  const noTextIndex = analysesRouteSource.indexOf("No extracted text available");
+
+  assert.notEqual(sourceEventIndex, -1);
+  assert.notEqual(noTextIndex, -1);
+  assert.ok(
+    sourceEventIndex < noTextIndex,
+    "CV text extraction source should be recorded before returning no-text errors"
+  );
+  assert.match(analysesRouteSource, /source:\s*cvTextSource/);
+  assert.match(analysesRouteSource, /"template_pdf_parse"/);
+  assert.match(analysesRouteSource, /"stored_pdf_text"/);
+  assert.match(adminObservabilitySource, /cv_text_extraction/);
 });

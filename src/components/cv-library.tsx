@@ -156,8 +156,10 @@ export default function CVLibrary({
                     <a
                       key={analysis.id}
                       href={`/?analysis=${encodeURIComponent(analysis.id)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        onOpenAnalysis(analysis.id);
+                      }}
                       className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-[#0a0a12]/70 px-3 py-2 text-left text-xs text-zinc-300 transition-colors hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-100"
                     >
                       <FileSearch className="h-3.5 w-3.5 shrink-0 text-rose-300" />
@@ -354,8 +356,10 @@ export default function CVLibrary({
                       <a
                         key={analysis.id}
                         href={`/?analysis=${encodeURIComponent(analysis.id)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          onOpenAnalysis(analysis.id);
+                        }}
                         className="group flex min-w-0 items-center gap-2 rounded-lg border border-white/[0.05] bg-[#0a0a12] px-3 py-2 text-left transition-colors hover:border-sky-500/25 hover:bg-sky-500/10"
                       >
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/70 text-zinc-500 group-hover:text-sky-300">

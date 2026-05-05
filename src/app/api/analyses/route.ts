@@ -10,7 +10,10 @@ import {
   type AIContext,
   type AnalysisMode,
 } from "@/lib/db";
+import { getCVTemplate, type CVTemplateId, type CVTemplateLocale } from "@/lib/cv-templates";
+import { renderTemplatePDF } from "@/lib/cv-template-pdf";
 import { getErrorMessage } from "@/lib/errors";
+import { getBestCVText } from "@/lib/cv-profile";
 import { extractPdfText } from "@/lib/pdf-extraction";
 import {
   createRequestId,
@@ -70,6 +73,144 @@ async function retryCVExtraction(input: {
       extracted
     )) ?? input.cv
   );
+}
+
+function getTemplateAnalysisFilename(cv: CVRecord) {
+  const baseName = cv.name.replace(/[^a-zA-Z0-9_-]/g, "_") || "template-cv";
+  return `${baseName}.pdf`;
+}
+
+async function extractTemplateCVPdf(input: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  cv: CVRecord;
+  userId: string;
+  requestId: string;
+}) {
+  if (!input.cv.profile || !input.cv.template_id) {
+    throw new Error("Template CV has no profile or template.");
+  }
+
+  const template = getCVTemplate(input.cv.template_id);
+  if (!template) {
+    throw new Error("Template not found.");
+  }
+
+  const filename = getTemplateAnalysisFilename(input.cv);
+  const renderStartedAt = performance.now();
+  await recordProcessingEvent({
+    userId: input.userId,
+    cvId: input.cv.id,
+    requestId: input.requestId,
+    stage: "template_pdf_render",
+    status: "started",
+    source: "api_analyses",
+    metadata: {
+      filename,
+      templateId: template.templateId,
+      locale: input.cv.template_locale,
+    },
+  });
+
+  const templatePdfBuffer = await renderTemplatePDF({
+    profile: input.cv.profile,
+    templateId: template.templateId as CVTemplateId,
+    locale: (input.cv.template_locale ?? "es") as CVTemplateLocale,
+  });
+
+  await recordProcessingEvent({
+    userId: input.userId,
+    cvId: input.cv.id,
+    requestId: input.requestId,
+    stage: "template_pdf_render",
+    status: "success",
+    source: "api_analyses",
+    durationMs: performance.now() - renderStartedAt,
+    fileSize: templatePdfBuffer.length,
+    metadata: {
+      filename,
+      templateId: template.templateId,
+    },
+  });
+
+  const pdfStoragePath = `${input.userId}/${input.cv.id}-${input.requestId}-template.pdf`;
+  const storageStartedAt = performance.now();
+  await recordProcessingEvent({
+    userId: input.userId,
+    cvId: input.cv.id,
+    requestId: input.requestId,
+    stage: "storage_upload",
+    status: "started",
+    source: CV_PDFS_BUCKET,
+    fileSize: templatePdfBuffer.length,
+    metadata: {
+      storagePath: pdfStoragePath,
+      temporary: true,
+    },
+  });
+
+  const { error: uploadError } = await input.supabase.storage
+    .from(CV_PDFS_BUCKET)
+    .upload(pdfStoragePath, templatePdfBuffer, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+
+  if (uploadError) {
+    await recordProcessingEvent({
+      userId: input.userId,
+      cvId: input.cv.id,
+      requestId: input.requestId,
+      stage: "storage_upload",
+      status: "error",
+      source: CV_PDFS_BUCKET,
+      durationMs: performance.now() - storageStartedAt,
+      fileSize: templatePdfBuffer.length,
+      errorCode: "storage_upload_failed",
+      errorMessage: sanitizeErrorMessage(uploadError.message),
+      metadata: {
+        storagePath: pdfStoragePath,
+        temporary: true,
+      },
+    });
+    throw uploadError;
+  }
+
+  await recordProcessingEvent({
+    userId: input.userId,
+    cvId: input.cv.id,
+    requestId: input.requestId,
+    stage: "storage_upload",
+    status: "success",
+    source: CV_PDFS_BUCKET,
+    durationMs: performance.now() - storageStartedAt,
+    fileSize: templatePdfBuffer.length,
+    metadata: {
+      storagePath: pdfStoragePath,
+      temporary: true,
+    },
+  });
+
+  try {
+    const extracted = await extractPdfText(templatePdfBuffer, {
+      userId: input.userId,
+      cvId: input.cv.id,
+      requestId: input.requestId,
+      fileSize: templatePdfBuffer.length,
+      filename,
+      pdfStoragePath,
+    });
+
+    return {
+      extracted,
+      filename,
+      fileSize: templatePdfBuffer.length,
+    };
+  } finally {
+    await input.supabase.storage
+      .from(CV_PDFS_BUCKET)
+      .remove([pdfStoragePath])
+      .catch(() => {});
+  }
 }
 
 export async function GET() {
@@ -142,8 +283,57 @@ export async function POST(req: NextRequest) {
       requestId,
     });
 
-    const text = cv.text_python || cv.text_pdfjs || cv.text_node;
-    if (!text) {
+    const templatePdfExtraction =
+      cv.type === "template"
+        ? await extractTemplateCVPdf({
+            supabase,
+            cv,
+            userId: user.id,
+            requestId,
+          })
+        : null;
+    const analysisExtraction = templatePdfExtraction?.extracted ?? {
+      text_python: cv.text_python,
+      text_pdfjs: cv.text_pdfjs,
+      text_node: cv.text_node,
+      extract_error_python: cv.extract_error_python,
+      extract_error_pdfjs: cv.extract_error_pdfjs,
+      extract_error_node: cv.extract_error_node,
+    };
+    const analysisText = getBestCVText(analysisExtraction);
+    const cvTextSource = templatePdfExtraction
+      ? "template_pdf_parse"
+      : analysisText
+        ? "stored_pdf_text"
+        : "no_text_available";
+
+    await recordProcessingEvent({
+      userId,
+      cvId,
+      requestId,
+      stage: "cv_text_extraction",
+      status: analysisText ? "success" : "warning",
+      source: cvTextSource,
+      fileSize: templatePdfExtraction?.fileSize ?? cv.file_size,
+      textLength: analysisText?.trim().length ?? 0,
+      errorCode: analysisText ? null : "no_extracted_text_available",
+      errorMessage: analysisText
+        ? null
+        : "No parser produced usable text for this CV.",
+      metadata: {
+        cvType: cv.type,
+        filename: templatePdfExtraction?.filename ?? cv.filename,
+        pythonLength: analysisExtraction.text_python?.trim().length ?? 0,
+        pdfjsLength: analysisExtraction.text_pdfjs?.trim().length ?? 0,
+        nodeLength: analysisExtraction.text_node?.trim().length ?? 0,
+        pythonError: Boolean(analysisExtraction.extract_error_python),
+        pdfjsError: Boolean(analysisExtraction.extract_error_pdfjs),
+        nodeError: Boolean(analysisExtraction.extract_error_node),
+        templateId: cv.template_id,
+      },
+    });
+
+    if (!analysisText) {
       await recordProcessingEvent({
         userId,
         cvId,
@@ -155,13 +345,13 @@ export async function POST(req: NextRequest) {
         errorCode: "no_extracted_text_available",
         errorMessage: "No extracted text available for this CV.",
         metadata: {
-          filename: cv.filename,
-          pythonLength: cv.text_python?.length ?? 0,
-          pdfjsLength: cv.text_pdfjs?.length ?? 0,
-          nodeLength: cv.text_node?.length ?? 0,
-          pythonError: Boolean(cv.extract_error_python),
-          pdfjsError: Boolean(cv.extract_error_pdfjs),
-          nodeError: Boolean(cv.extract_error_node),
+          filename: templatePdfExtraction?.filename ?? cv.filename,
+          pythonLength: analysisExtraction.text_python?.length ?? 0,
+          pdfjsLength: analysisExtraction.text_pdfjs?.length ?? 0,
+          nodeLength: analysisExtraction.text_node?.length ?? 0,
+          pythonError: Boolean(analysisExtraction.extract_error_python),
+          pdfjsError: Boolean(analysisExtraction.extract_error_pdfjs),
+          nodeError: Boolean(analysisExtraction.extract_error_node),
         },
       });
       return NextResponse.json(
@@ -191,15 +381,15 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       cv_id: cv.id,
       title: trimmedTitle,
-      filename: cv.filename ?? "",
-      file_size: cv.file_size,
+      filename: templatePdfExtraction?.filename ?? cv.filename ?? "",
+      file_size: templatePdfExtraction?.fileSize ?? cv.file_size,
       pdf_storage_path: cv.pdf_storage_path,
-      text_python: cv.text_python,
-      text_pdfjs: cv.text_pdfjs,
-      text_node: cv.text_node,
-      extract_error_python: cv.extract_error_python,
-      extract_error_pdfjs: cv.extract_error_pdfjs,
-      extract_error_node: cv.extract_error_node,
+      text_python: analysisExtraction.text_python,
+      text_pdfjs: analysisExtraction.text_pdfjs,
+      text_node: analysisExtraction.text_node,
+      extract_error_python: analysisExtraction.extract_error_python,
+      extract_error_pdfjs: analysisExtraction.extract_error_pdfjs,
+      extract_error_node: analysisExtraction.extract_error_node,
       analysis_mode: mode,
       ai_model: model,
       job_description: mode === "job_match" ? jobDescription?.trim() ?? null : null,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +18,10 @@ import {
   XCircle,
   Trash2,
   Loader2,
+  Check,
+  X,
+  Plus,
+  Pencil,
 } from "lucide-react";
 import type { AnalysisMode, AIContext, JobKeyData } from "@/lib/db";
 
@@ -72,7 +77,11 @@ function safeParseJobKeyData(value: string | null): JobKeyData | null {
 }
 
 export default function AIAnalysisView({ analysis, onDelete }: AIAnalysisViewProps) {
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [editedUrl, setEditedUrl] = useState(analysis.job_url || "");
+  const [isSavingUrl, setIsSavingUrl] = useState(false);
   const keywords = safeParseArray(analysis.ai_keywords);
   const improvements = safeParseArray(analysis.ai_improvements);
   const jobKeywords = safeParseArray(analysis.job_keywords);
@@ -171,6 +180,25 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
       alert("No se pudo borrar el análisis.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleSaveUrl = async () => {
+    setIsSavingUrl(true);
+    try {
+      const res = await fetch(`/api/analyses/${analysis.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_url: editedUrl.trim() || null }),
+      });
+      if (!res.ok) throw new Error("Error al guardar la URL");
+      setIsEditingUrl(false);
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo guardar la URL.");
+    } finally {
+      setIsSavingUrl(false);
     }
   };
 
@@ -273,17 +301,6 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
                     <Briefcase className="w-3 h-3" />
                     Con oferta
                   </span>
-                )}
-                {analysis.job_url && (
-                  <a
-                    href={analysis.job_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[11px] text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2 py-1 rounded-md"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    URL oferta
-                  </a>
                 )}
                 <button
                   onClick={handleExport}

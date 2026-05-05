@@ -348,7 +348,7 @@ export default function AppShell({
               className="flex-1 flex flex-col min-h-0"
             >
               <NewAnalysisFlow
-                cvs={cvs.filter(c => c.type === "uploaded")}
+                cvs={cvs}
                 onCVCreated={fetchCVs}
                 onAnalysisCreated={handleAnalysisCreated}
               />

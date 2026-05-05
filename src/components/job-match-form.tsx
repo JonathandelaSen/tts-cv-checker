@@ -11,10 +11,11 @@ import {
   ChevronRight,
   Briefcase,
   KeyRound,
+  Link,
 } from "lucide-react";
 
 interface JobMatchFormProps {
-  onSubmit: (jobDescription: string, model: string) => void;
+  onSubmit: (jobDescription: string, jobUrl: string, model: string) => void;
   onBack: () => void;
   loading: boolean;
   error: string | null;
@@ -31,11 +32,12 @@ export default function JobMatchForm({
   onOpenSettings,
 }: JobMatchFormProps) {
   const [jobDescription, setJobDescription] = useState("");
+  const [jobUrl, setJobUrl] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
 
   const handleSubmit = () => {
     if (!jobDescription.trim()) return;
-    onSubmit(jobDescription.trim(), selectedModel);
+    onSubmit(jobDescription.trim(), jobUrl.trim(), selectedModel);
   };
 
   return (
@@ -64,6 +66,24 @@ export default function JobMatchForm({
 
       <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
         <div className="space-y-3">
+          {/* Job URL */}
+          <div>
+            <label className="flex items-center gap-2 text-sm text-zinc-400 mb-1.5">
+              <Link className="w-3.5 h-3.5" />
+              URL de la oferta
+              <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-white/[0.05]">
+                Opcional
+              </span>
+            </label>
+            <input
+              type="url"
+              placeholder="https://www.linkedin.com/jobs/view/..."
+              className="w-full h-10 px-4 rounded-xl bg-[#0a0a12] border border-white/[0.06] text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/40 focus:ring-2 focus:ring-emerald-500/10 transition-all mb-3"
+              value={jobUrl}
+              onChange={(e) => setJobUrl(e.target.value)}
+            />
+          </div>
+
           {/* Job description */}
           <div>
             <label className="flex items-center gap-2 text-sm text-zinc-400 mb-1.5">

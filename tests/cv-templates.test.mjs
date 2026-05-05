@@ -54,16 +54,16 @@ test("AI editing helper keeps edits JSON-only and rejects unusable profiles", ()
   assert.match(source, /parseEditedCVProfile/);
 });
 
-test("CV template version endpoints handle CRUD and AI edits", () => {
-  assert.ok(exists("src/app/api/cv-template-versions/route.ts"));
-  assert.ok(exists("src/app/api/cv-template-versions/[id]/route.ts"));
-  assert.ok(exists("src/app/api/cv-template-versions/[id]/edit/route.ts"));
-  assert.ok(exists("src/app/api/cv-template-versions/[id]/pdf/route.ts"));
+test("unified template CV endpoints handle CRUD and AI edits", () => {
+  assert.ok(exists("src/app/api/cvs/[id]/route.ts"));
+  assert.ok(exists("src/app/api/cvs/[id]/edit/route.ts"));
+  assert.ok(exists("src/app/api/cvs/[id]/template-pdf/route.ts"));
 
-  const editSource = read("src/app/api/cv-template-versions/[id]/edit/route.ts");
-  assert.match(editSource, /getCVTemplateVersion/);
+  const editSource = read("src/app/api/cvs/[id]/edit/route.ts");
+  assert.match(editSource, /getCV\(supabase,\s*id,\s*user\.id\)/);
   assert.match(editSource, /editCVProfileWithAI/);
-  assert.match(editSource, /updateCVTemplateVersion/);
+  assert.match(editSource, /updateCVProfile/);
+  assert.match(editSource, /cv\.type !== "template"/);
 });
 
 test("CV template selection creates a new version from original", () => {
@@ -72,7 +72,7 @@ test("CV template selection creates a new version from original", () => {
 
   assert.match(source, /getCV\(supabase,\s*id,\s*user\.id\)/);
   assert.match(source, /getCVStructuredProfile/);
-  assert.match(source, /createCVTemplateVersion/);
+  assert.match(source, /createTemplateCV/);
 });
 
 test("template recommendations API returns the latest analyzed CV recommendations", () => {

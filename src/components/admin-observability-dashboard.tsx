@@ -24,6 +24,7 @@ const STATUS_OPTIONS = ["", "started", "success", "warning", "error"];
 const STAGE_OPTIONS = [
   "",
   "cv_upload",
+  "cv_text_extraction",
   "pdf_parser",
   "pdf_extraction",
   "storage_upload",

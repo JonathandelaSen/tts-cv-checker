@@ -168,6 +168,7 @@ export default function ExtractionView({
 
   const handleJobMatchAnalysis = async (
     jobDescription: string,
+    jobUrl: string,
     model: string
   ) => {
     if (!hasGeminiApiKey) {
@@ -186,6 +187,7 @@ export default function ExtractionView({
           analysisId: analysis.id,
           mode: "job_match",
           jobDescription,
+          jobUrl,
           model,
           geminiApiKey,
         }),
