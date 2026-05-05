@@ -539,6 +539,7 @@ export default function AppShell({
                         filename: activeAnalysis.filename,
                       }}
                       onDelete={handleDelete}
+                      onUpdate={() => fetchAnalysisDetail(activeAnalysis.id)}
                     />
                   </motion.div>
                 ) : null}

@@ -54,6 +54,7 @@ interface AIAnalysisViewProps {
     filename: string;
   };
   onDelete?: (id: string) => Promise<void>;
+  onUpdate?: () => void;
 }
 
 function safeParseArray(value: string | null): string[] {
@@ -76,7 +77,7 @@ function safeParseJobKeyData(value: string | null): JobKeyData | null {
   }
 }
 
-export default function AIAnalysisView({ analysis, onDelete }: AIAnalysisViewProps) {
+export default function AIAnalysisView({ analysis, onDelete, onUpdate }: AIAnalysisViewProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditingUrl, setIsEditingUrl] = useState(false);
@@ -193,6 +194,7 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
       });
       if (!res.ok) throw new Error("Error al guardar la URL");
       setIsEditingUrl(false);
+      onUpdate?.();
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -365,6 +367,102 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
               <ExternalLink className="h-3.5 w-3.5" />
               Abrir CV
             </a>
+          </motion.div>
+        )}
+
+        {analysis.analysis_mode === "job_match" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.09 }}
+            className="flex flex-col gap-3 rounded-2xl border border-emerald-500/10 bg-emerald-500/[0.03] p-5 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                <ExternalLink className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  Enlace de la Oferta
+                </p>
+                {isEditingUrl ? (
+                  <div className="flex items-center gap-2 mt-1 w-full max-w-2xl">
+                    <input
+                      type="url"
+                      value={editedUrl}
+                      onChange={(e) => setEditedUrl(e.target.value)}
+                      placeholder="https://www.linkedin.com/jobs/..."
+                      className="h-8 w-full rounded-lg bg-[#0a0a12] border border-white/[0.06] px-3 text-sm text-zinc-300 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/40"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleSaveUrl}
+                      disabled={isSavingUrl}
+                      className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                    >
+                      {isSavingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingUrl(false);
+                        setEditedUrl(analysis.job_url || "");
+                      }}
+                      disabled={isSavingUrl}
+                      className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : analysis.job_url ? (
+                  <a
+                    href={analysis.job_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate text-sm font-semibold text-zinc-100 hover:text-emerald-300 transition-colors mt-0.5"
+                  >
+                    {analysis.job_url}
+                  </a>
+                ) : (
+                  <p className="text-sm text-zinc-500 mt-0.5 italic">
+                    Sin enlace especificado
+                  </p>
+                )}
+              </div>
+            </div>
+            {!isEditingUrl && (
+              <div className="flex shrink-0 gap-2 mt-3 sm:mt-0">
+                {analysis.job_url && (
+                  <a
+                    href={analysis.job_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Abrir URL
+                  </a>
+                )}
+                <button
+                  onClick={() => {
+                    setEditedUrl(analysis.job_url || "");
+                    setIsEditingUrl(true);
+                  }}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-500/20 bg-zinc-800/50 px-3 text-xs font-semibold text-zinc-300 transition-colors hover:bg-zinc-800"
+                >
+                  {analysis.job_url ? (
+                    <>
+                      <Pencil className="h-3.5 w-3.5" />
+                      Editar
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3.5 w-3.5" />
+                      Añadir URL
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
 
