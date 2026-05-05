@@ -324,9 +324,14 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
                   CV utilizado
                 </p>
-                <p className="truncate text-sm font-semibold text-zinc-100">
+                <a
+                  href={analysis.cv?.type === "template" ? `/api/cvs/${analysis.cv?.id}/template-pdf` : `/api/cvs/${analysis.cv?.id ?? analysis.cv_id}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block truncate text-sm font-semibold text-zinc-100 hover:text-sky-300 transition-colors"
+                >
                   {analysis.cv?.name ?? analysis.filename}
-                </p>
+                </a>
                 {analysis.cv?.filename && (
                   <p className="truncate text-xs text-zinc-500">
                     {analysis.cv.filename}
@@ -337,7 +342,7 @@ ${analysis.job_description ? `OFERTA DE TRABAJO:\n${analysis.job_description}` :
             <a
               href={analysis.cv?.type === "template" ? `/api/cvs/${analysis.cv?.id}/template-pdf` : `/api/cvs/${analysis.cv?.id ?? analysis.cv_id}/pdf`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 text-xs font-semibold text-sky-300 transition-colors hover:bg-sky-500/20"
             >
               <ExternalLink className="h-3.5 w-3.5" />

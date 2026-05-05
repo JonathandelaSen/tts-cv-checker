@@ -268,17 +268,11 @@ export default function Sidebar({
         )}
 
         {generalAnalyses.map((a) => (
-          <div
+          <a
             key={a.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(a.id)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelect(a.id);
-              }
-            }}
+            href={`/?analysis=${encodeURIComponent(a.id)}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`
               group w-full flex items-center gap-2.5 rounded-lg transition-all duration-150 text-left relative
               cursor-pointer focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none
@@ -339,6 +333,7 @@ export default function Sidebar({
             {!collapsed && (
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onDelete(a.id);
                 }}
@@ -347,7 +342,7 @@ export default function Sidebar({
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
-          </div>
+          </a>
         ))}
 
         {!collapsed && jobAnalyses.length > 0 && (
@@ -357,17 +352,11 @@ export default function Sidebar({
         )}
 
         {jobAnalyses.map((a) => (
-          <div
+          <a
             key={a.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(a.id)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelect(a.id);
-              }
-            }}
+            href={`/?analysis=${encodeURIComponent(a.id)}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`
               group w-full flex items-center gap-2.5 rounded-lg transition-all duration-150 text-left relative
               cursor-pointer focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none
@@ -418,6 +407,7 @@ export default function Sidebar({
             {!collapsed && (
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onDelete(a.id);
                 }}
@@ -426,7 +416,7 @@ export default function Sidebar({
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
-          </div>
+          </a>
         ))}
       </div>
 
