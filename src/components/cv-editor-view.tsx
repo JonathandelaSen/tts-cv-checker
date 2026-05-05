@@ -30,7 +30,7 @@ import type {
 } from "@/lib/db";
 import { getCVTemplate, type CVTemplateLocale } from "@/lib/cv-templates";
 import { getErrorMessage } from "@/lib/errors";
-import CVTemplatePreview from "@/components/cv-template-preview";
+
 import { Button } from "@/components/ui/button";
 
 interface CVEditorViewProps {
@@ -281,24 +281,12 @@ CV Original
 
           <div className="hidden h-4 w-[1px] bg-white/10 md:block" />
 
-          {/* Zoom Controls */}
-          <div className="hidden items-center gap-1 rounded-lg border border-white/5 bg-white/5 p-1 md:flex">
-            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(0.4, zoom - 0.1))} className="h-7 w-7 text-zinc-400">
-              <Minus className="h-3.5 w-3.5" />
-            </Button>
-            <span className="min-w-[40px] text-center text-[11px] font-medium text-zinc-400">{Math.round(zoom * 100)}%</span>
-            <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(1.5, zoom + 0.1))} className="h-7 w-7 text-zinc-400">
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setZoom(0.85)} className="ml-1 h-7 w-7 text-zinc-500">
-              <RotateCcw className="h-3 w-3" />
-            </Button>
-          </div>
 
-          <div className="hidden h-4 w-[1px] bg-white/10 md:block" />
 
           <a
             href={`/api/cvs/${currentVersion.id}/template-pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-3 text-xs text-white hover:bg-white/10"
           >
             <Download className="h-3.5 w-3.5" />
@@ -323,27 +311,18 @@ CV Original
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
                style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 0)", backgroundSize: "24px 24px" }} />
           
-          <div className="flex min-h-full min-w-full items-center justify-center p-10 md:p-20">
-            <motion.div
-              style={{ scale: zoom }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="relative shadow-[0_0_80px_rgba(0,0,0,0.5)] origin-center"
-            >
-              <div className="w-[820px] overflow-hidden rounded-sm bg-white ring-1 ring-white/10">
-                {currentVersion.profile ? (
-                  <CVTemplatePreview
-                    profile={currentVersion.profile}
-                    templateId={activeTemplate.templateId}
-                    locale={locale}
-                  />
-                ) : (
-                  <div className="flex aspect-[1/1.41] items-center justify-center bg-zinc-900 text-zinc-500">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
+              {currentVersion.profile ? (
+                <iframe
+                  key={currentVersion.updated_at}
+                  src={`/api/cvs/${currentVersion.id}/template-pdf#toolbar=0&navpanes=0&scrollbar=0`}
+                  className="w-full h-full border-none bg-zinc-950"
+                  title="Vista previa del CV"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-zinc-500">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              )}
         </div>
 
         {/* Side Panel */}
