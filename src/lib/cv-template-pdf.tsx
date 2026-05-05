@@ -236,7 +236,7 @@ function BulletList({ items }: { items?: string[] }) {
   return (
     <View style={{ marginTop: 2 }}>
       {items?.map((item, index) => (
-        <View key={index} style={styles.bulletContainer}>
+        <View key={index} style={styles.bulletContainer} wrap={false}>
           <Text style={styles.bulletDot}>•</Text>
           <Text style={styles.bulletText}>{item}</Text>
         </View>
@@ -247,8 +247,8 @@ function BulletList({ items }: { items?: string[] }) {
 
 function ExperiencePDF({ item }: { item: StandardCVExperience }) {
   return (
-    <View style={styles.item} wrap={false}>
-      <View style={styles.itemHead}>
+    <View style={styles.item}>
+      <View style={styles.itemHead} wrap={false}>
         <View style={styles.itemHeadMain}>
           <Text style={styles.itemTitle}>{item.role || item.company}</Text>
           <Text style={styles.itemMeta}>
@@ -264,8 +264,8 @@ function ExperiencePDF({ item }: { item: StandardCVExperience }) {
 
 function EducationPDF({ item }: { item: StandardCVEducation }) {
   return (
-    <View style={styles.item} wrap={false}>
-      <View style={styles.itemHead}>
+    <View style={styles.item}>
+      <View style={styles.itemHead} wrap={false}>
         <View style={styles.itemHeadMain}>
           <Text style={styles.itemTitle}>{item.degree || item.institution}</Text>
           <Text style={styles.itemMeta}>
@@ -284,8 +284,8 @@ function EducationPDF({ item }: { item: StandardCVEducation }) {
 function NamedPDF({ item }: { item: StandardCVNamedItem }) {
   const metaParts = [item.issuer, item.organization].filter(Boolean);
   return (
-    <View style={styles.item} wrap={false}>
-      <View style={styles.itemHead}>
+    <View style={styles.item}>
+      <View style={styles.itemHead} wrap={false}>
         <View style={styles.itemHeadMain}>
           <Text style={styles.itemTitle}>{item.name}</Text>
           <Text style={styles.itemMeta}>
@@ -360,6 +360,13 @@ function CVTemplateDocument({
               <Text style={styles.summary}>{profile.summary}</Text>
             </Section>
           )}
+          {hasItems(profile.experience) && (
+            <Section title={labels.experience}>
+              {profile.experience?.map((item, index) => (
+                <ExperiencePDF key={index} item={item} />
+              ))}
+            </Section>
+          )}
           {hasItems(profile.skills) && (
             <Section title={labels.skills}>
               <View style={styles.skillsGrid}>
@@ -374,10 +381,10 @@ function CVTemplateDocument({
               </View>
             </Section>
           )}
-          {hasItems(profile.experience) && (
-            <Section title={labels.experience}>
-              {profile.experience?.map((item, index) => (
-                <ExperiencePDF key={index} item={item} />
+          {hasItems(profile.education) && (
+            <Section title={labels.education}>
+              {profile.education?.map((item, index) => (
+                <EducationPDF key={index} item={item} />
               ))}
             </Section>
           )}
@@ -385,13 +392,6 @@ function CVTemplateDocument({
             <Section title={labels.projects}>
               {profile.projects?.map((item, index) => (
                 <NamedPDF key={index} item={item} />
-              ))}
-            </Section>
-          )}
-          {hasItems(profile.education) && (
-            <Section title={labels.education}>
-              {profile.education?.map((item, index) => (
-                <EducationPDF key={index} item={item} />
               ))}
             </Section>
           )}
